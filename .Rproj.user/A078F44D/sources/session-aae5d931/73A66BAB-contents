@@ -50,12 +50,13 @@ defineModule(sim, list(
 doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (eventType == "init") {
-    sim <- EasternCanadaLandbaseInit(sim)
+    sim <- Init(sim)
     return(invisible(sim))
   }
   
   noEventWarning(sim)
 }
+
 
 
 ### template initialization
