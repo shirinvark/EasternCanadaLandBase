@@ -23,8 +23,6 @@ defineModule(sim, list(
   documentation = list("NEWS.md", "README.md", "EasternCanadaLandbase.Rmd"),
   reqdPkgs = list("terra", "sf"),
   
-  parameters = data.table::data.table(),
-  
   inputObjects = data.table::rbindlist(list(
     expectsInput("PlanningRaster", "SpatRaster",
                  "Planning grid from EasternCanadaDataPrep"),
