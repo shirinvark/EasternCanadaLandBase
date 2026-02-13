@@ -1,21 +1,15 @@
-# EasternCanadaLandbase assembles and maintains the spatial landbase
-# on which subsequent modules will classify managed forested stands
-# into analysis units. No ecological or management classification
-# is performed in this module.
 Init <- function(sim) {
   
-  checkObject(sim, "PlanningRaster", "SpatRaster")
+  checkObject(sim, "PlanningGrid_250m", "SpatRaster")
   checkObject(sim, "LandCoverAligned", "SpatRaster")
-  checkObject(sim, "CPCAD")
-  
-  # EasternCanadaLandbase assembles and maintains the spatial landbase
-  # on which subsequent modules will classify managed forested stands
-  # into analysis units. No ecological or management classification
-  # is performed in this module.
+  checkObject(sim, "standAgeMap", "SpatRaster")
+  checkObject(sim, "analysisUnitMap", "SpatRaster")
   
   sim$Landbase <- list(
-    planningRaster = sim$PlanningRaster,
-    landcover      = sim$LandCoverAligned
+    planningRaster   = sim$PlanningGrid_250m,
+    landcover        = sim$LandCoverAligned,
+    standAgeMap      = sim$standAgeMap,
+    analysisUnitMap  = sim$analysisUnitMap
   )
   
   invisible(sim)
