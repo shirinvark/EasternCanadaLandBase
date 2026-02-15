@@ -157,6 +157,23 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
   }
   
+  # =========================================================
+  # Analysis Unit
+  # =========================================================
+  if (is.null(sim$analysisUnitMap)) {
+    
+    message("Creating analysisUnitMap from SCANFI")
+    
+    analysisUnitMap <- sim$LandCover
+    analysisUnitMap[] <- 0
+    
+    analysisUnitMap[sim$LandCover == 210] <- 1
+    analysisUnitMap[sim$LandCover == 220] <- 2
+    analysisUnitMap[sim$LandCover == 230] <- 3
+    analysisUnitMap[sim$LandCover == 240] <- 4
+    
+    sim$analysisUnitMap <- analysisUnitMap
+  }
   
   # =========================================================
   # LandCover

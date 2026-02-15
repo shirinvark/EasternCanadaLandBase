@@ -6,7 +6,28 @@ Init <- function(sim) {
   checkObject(sim, "analysisUnitMap", "SpatRaster")
   checkObject(sim, "CPCAD", "sf")
   
-  # ---- Mask Protected Areas ----
+  # =========================================================
+  # 1) Align ALL rasters to PlanningGrid FIRST
+  # =========================================================
+  
+  message("Aligning rasters to PlanningGrid")
+  
+  sim$standAgeMap <- terra::resample(
+    sim$standAgeMap,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
+  sim$analysisUnitMap <- terra::resample(
+    sim$analysisUnitMap,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
+  # =========================================================
+  # 2) Mask Protected Areas
+  # =========================================================
+  
   message("Masking protected areas from analysisUnitMap")
   
   if (!terra::same.crs(sim$CPCAD, sim$PlanningGrid_250m)) {
@@ -26,25 +47,23 @@ Init <- function(sim) {
     sim$analysisUnitMap
   )
   
-  # ---- Net Productive Forest ----
+  # =========================================================
+  # 3) Net Productive Forest (SAFE VERSION)
+  # =========================================================
+  
   message("Creating net productive forest")
   
-  netProductiveForest <- sim$analysisUnitMap
-  
-  netProductiveForest[
+  sim$netProductiveForest <- terra::ifel(
     sim$analysisUnitMap > 0 &
       !is.na(sim$standAgeMap) &
-      sim$standAgeMap > 0
-  ] <- 1
+      sim$standAgeMap > 0,
+    1,
+    0
+  )
   
-  netProductiveForest[
-    !(sim$analysisUnitMap > 0 &
-        !is.na(sim$standAgeMap) &
-        sim$standAgeMap > 0)
-  ] <- 0
-  
-  sim$netProductiveForest <- netProductiveForest
-  
+  # =========================================================
+  # 4) Final Landbase container
+  # =========================================================
   
   sim$Landbase <- list(
     planningRaster       = sim$PlanningGrid_250m,
