@@ -5,7 +5,7 @@
 # Data folders
 inputs/
 cache/
-Modules/
+modules/
 # Large raster files
 *.tif
 *.zip
