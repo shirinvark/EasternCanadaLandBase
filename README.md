@@ -3,29 +3,39 @@
 EasternCanadaLandbase assembles and maintains the spatial landbase used for
 planning and analysis in Eastern Canada.
 
-This module gathers prepared spatial inputs (e.g. planning grid, aligned land
+This module gathers prepared spatial inputs (e.g., planning grid, aligned land
 cover, protected areas, riparian layers) into a single, consistent landbase
-object. It does **not** perform any ecological or management classification.
+object. It does **not** perform ecological interpretation or management
+classification.
 
-In particular, this module does **not**:
-- classify forested vs. non-forested land,
-- distinguish managed vs. unmanaged forests,
-- define stands or analysis units,
-- perform harvesting or AAC calculations.
+## What this module does NOT do
 
-Classification of managed forested stands into analysis units is expected to be
-implemented in downstream modules that operate on this landbase.
+This module intentionally does **not**:
+
+- Classify forested vs. non-forested land  
+- Distinguish managed vs. unmanaged forests  
+- Define stands or analysis units  
+- Perform harvesting simulations  
+- Compute AAC (Annual Allowable Cut)  
+
+All classification, yield modeling, and management logic is expected to be
+implemented in downstream analytical modules.
 
 ## Outputs
 
-The main output of this module is:
+The primary output of this module is:
 
-- `sim$Landbase`: a container holding the spatial foundation for downstream
-  analyses.
+- `sim$Landbase`  
+  A structured container that holds the spatial foundation for downstream
+  modeling and analysis.
 
-## Role in the workflow
+## Role in the Workflow
 
-EasternCanadaLandbase serves as a handoff layer between data preparation modules
-and analytical or classification modules (e.g. harvesting, AAC, habitat models).
+EasternCanadaLandbase functions as a structural handoff layer between:
 
-It is intentionally decision-free and policy-neutral.
+- Data preparation modules  
+- Analytical / decision modules (e.g., harvesting, AAC, habitat modeling)
+
+The module is intentionally decision-neutral and policy-agnostic.
+It provides a stable, reproducible spatial base upon which management
+logic can safely operate.
