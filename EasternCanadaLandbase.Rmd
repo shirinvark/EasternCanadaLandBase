@@ -1,108 +1,196 @@
 ---
 title: "EasternCanadaLandbase Manual"
-subtitle: "v.`r SpaDES.core::moduleMetadata(module = 'EasternCanadaLandbase', path = '..')$version`"
-date: "Last updated: `r Sys.Date()`"
+subtitle: "Spatial data preparation for Eastern Canada"
+date: "Last updated: 2026-02-14"
 output:
   bookdown::html_document2:
     toc: true
     toc_float: true
     theme: sandstone
     number_sections: false
-    df_print: paged
-    keep_md: yes
-editor_options:
-  chunk_output_type: console
-bibliography: citations/references_EasternCanadaLandbase.bib
-link-citations: true
-always_allow_html: true
 ---
 
-# EasternCanadaLandbase Module
+# EasternCanadaLandbase
 
-<!-- the following are text references used in captions for LaTeX compatibility -->
-(ref:EasternCanadaLandbase) *EasternCanadaLandbase*
+This module builds a planning-ready forest landbase for AAC calculations.
 
-```{r setup-EasternCanadaLandbase, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval = FALSE, results = "hold") ## change to eval = TRUE if all chunks are to be evaluated
+---
 
-dir.create("figures", showWarnings = FALSE)
+# 1. Conceptual Flow
 
-download.file(url = "https://img.shields.io/badge/Made%20with-Markdown-1f425f.png",
-              destfile = "figures/markdownBadge.png",
-              mode = "wb")
+```
+StandAgeMap  +  LandCover  +  CPCAD
+        ↓
+analysisUnitMap
+        ↓
+Protected area masking
+        ↓
+netProductiveForest
+        ↓
+Landbase container
 ```
 
-[![made-with-Markdown](figures/markdownBadge.png)](https://commonmark.org)
+---
 
-<!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
+# 2. Analysis Unit Definition
 
-#### Authors:
+Forest classes derived from SCANFI (reclassified to NTEMS):
 
-`r paste(as.character(SpaDES.core::moduleMetadata(module = "EasternCanadaLandbase", path = '..')$authors), sep = ', ')`
-<!-- ideally separate authors with new lines, '\n' not working -->
+| SCANFI Code | Forest Type   | AU Code |
+|------------|--------------|--------|
+| 210        | Coniferous   | 1      |
+| 220        | Deciduous    | 2      |
+| 230        | Mixedwood    | 3      |
+| 240        | Treed Wetland| 4      |
 
-## Module Overview
+## R Implementation
 
-### Module summary
 
-Provide a brief summary of what the module does / how to use the module.
+```{r setup, include=FALSE}
+analysisUnitMap <- LandCover
+analysisUnitMap[] <- 0
 
-Module documentation should be written so that others can use your module.
-This is a template for module documentation, and should be changed to reflect your module.
-
-### Module inputs and parameters
-
-Describe input data required by the module and how to obtain it (e.g., directly from online sources or supplied by other modules)
-If `sourceURL` is specified, `downloadData("EasternCanadaLandbase", "E:/EasternCanadaLandBase")` may be sufficient.
-
-Table \@ref(tab:moduleInputs-EasternCanadaLandbase) shows the full list of module inputs.
-
-```{r moduleInputs-EasternCanadaLandbase, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
-df_inputs <- SpaDES.core::moduleInputs("EasternCanadaLandbase", "E:/EasternCanadaLandBase")
-knitr::kable(df_inputs,
-             caption = "List of (ref:EasternCanadaLandbase) input objects and their description.") |>
-  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+analysisUnitMap[LandCover == 210] <- 1
+analysisUnitMap[LandCover == 220] <- 2
+analysisUnitMap[LandCover == 230] <- 3
+analysisUnitMap[LandCover == 240] <- 4
 ```
 
-Summary of user-visible parameters (Table \@ref(tab:moduleParams-EasternCanadaLandbase))
+---
 
+# 3. Protected Area Masking
 
-```{r moduleParams-EasternCanadaLandbase, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
-df_params <- SpaDES.core::moduleParams("EasternCanadaLandbase", "E:/EasternCanadaLandBase")
-knitr::kable(df_params, caption = "List of (ref:EasternCanadaLandbase) parameters and their description.") |>
-  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+Protected areas (CPCAD) are rasterized and removed:
+
+```{r setup, include=FALSE}
+protectedRaster <- terra::rasterize(
+  CPCAD,
+  PlanningGrid_250m,
+  field = 1,
+  background = 0
+)
+
+analysisUnitMap <- terra::ifel(
+  protectedRaster == 1,
+  0,
+  analysisUnitMap
+)
 ```
 
-### Events
+---
 
-Describe what happens for each event type.
+# 4. Net Productive Forest Definition
 
-### Plotting
+A cell is considered productive if:
 
-Write what is plotted.
+- It belongs to a forest AU (AU > 0)
+- Stand age exists
+- Stand age > 0
 
-### Saving
+Mathematically:
 
-Write what is saved.
-
-### Module outputs
-
-Description of the module outputs (Table \@ref(tab:moduleOutputs-EasternCanadaLandbase)).
-
-```{r moduleOutputs-EasternCanadaLandbase, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
-df_outputs <- SpaDES.core::moduleOutputs("EasternCanadaLandbase", "E:/EasternCanadaLandBase")
-knitr::kable(df_outputs, caption = "List of (ref:EasternCanadaLandbase) outputs and their description.") |>
-  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+```
+NPF = 1  if  (AU > 0 ∧ Age > 0)
+NPF = 0  otherwise
 ```
 
-### Links to other modules
+R implementation:
 
-Describe any anticipated linkages to other modules, such as modules that supply input data or do post-hoc analysis.
+```{r setup, include=FALSE}
+netProductiveForest <- terra::ifel(
+  analysisUnitMap > 0 &
+    !is.na(standAgeMap) &
+    standAgeMap > 0,
+  1,
+  0
+)
+```
 
-### Getting help
+---
 
--   provide a way for people to obtain help (e.g., module repository issues page)
+# 5. Final Landbase Object
 
-## References
+```{r setup, include=FALSE}
+Landbase <- list(
+  planningRaster       = PlanningGrid_250m,
+  landcover            = LandCover,
+  standAgeMap          = standAgeMap,
+  analysisUnitMap      = analysisUnitMap,
+  netProductiveForest  = netProductiveForest
+)
+```
 
-<!-- autogenerated from bibligraphy -->
+---
+
+
+# 6. Area by AU × Age (Next Step)
+
+We compute the area table that will feed AAC.
+
+### Mathematical Definition
+
+```
+Area(i,j) = Σ cells where (AU == i ∧ AgeClass == j)
+```
+
+### Example R Skeleton
+
+```{r}
+library(dplyr)
+
+df <- as.data.frame(c(netProductiveForest,
+                      analysisUnitMap,
+                      standAgeMap),
+                    na.rm = TRUE)
+
+colnames(df) <- c("NPF", "AU", "Age")
+
+areaTable <- df %>%
+  filter(NPF == 1) %>%
+  group_by(AU, Age) %>%
+  summarise(CellCount = n(), .groups = "drop")
+```
+
+---
+
+# 7. AAC Scaffold (Conceptual)
+
+## Simple Sustained Yield
+
+```
+AAC ≈ Total Productive Area / Rotation Length
+```
+
+## Structured AAC by AU
+
+```
+AAC_i = Σ ( Area_i,age × Yield_i,age ) / Rotation_i
+```
+
+## R Scaffold
+
+```{r}
+AAC_table <- areaTable %>%
+  mutate(
+    Yield = 0,        # placeholder
+    Rotation = 80,    # example
+    Volume = CellCount * Yield
+  ) %>%
+  group_by(AU) %>%
+  summarise(
+    AAC = sum(Volume) / unique(Rotation)
+  )
+```
+
+---
+
+# 8. Module Output Summary
+
+The module produces:
+
+- `standAgeMap`
+- `analysisUnitMap`
+- `netProductiveForest`
+- `Landbase` (container object)
+
+These objects become the input for the AAC module.
