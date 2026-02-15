@@ -117,33 +117,39 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 .inputObjects <- function(sim) {
   
   # =========================================================
-  # Planning Grid
+  # Stand Age FIRST (Real geographic extent)
   # =========================================================
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
+  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
     
-    message("Creating dummy PlanningGrid_250m")
+    message("Loading StandAge FIRST")
     
-    sim$PlanningGrid_250m <- terra::rast(
-      nrows = 200,
-      ncols = 200,
-      xmin = -85e4,
-      xmax = -80e4,
-      ymin = 45e5,
-      ymax = 50e5,
-      crs = "EPSG:3978"
+    dPath <- file.path(sim@paths$inputPath, "StandAge")
+    if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
+    
+    sim$standAgeMap <- LandR::prepInputsStandAgeMap(
+      destinationPath = dPath,
+      dataYear        = 2011
     )
-    
-    
-    terra::values(sim$PlanningGrid_250m) <- 1
   }
   
   
   # =========================================================
-  # Study Area
+  # Planning Grid FROM StandAge
+  # =========================================================
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
+    
+    message("Creating PlanningGrid from standAgeMap")
+    
+    sim$PlanningGrid_250m <- terra::rast(sim$standAgeMap)
+  }
+  
+  
+  # =========================================================
+  # Study Area FROM PlanningGrid
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("studyArea")) {
     
-    message("Creating dummy studyArea from grid extent")
+    message("Creating studyArea from PlanningGrid extent")
     
     sim$studyArea <- terra::as.polygons(
       terra::ext(sim$PlanningGrid_250m),
@@ -153,7 +159,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   
   # =========================================================
-  # Land Cover
+  # LandCover
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
     
@@ -171,55 +177,17 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   
   # =========================================================
-  # Stand Age
-  # =========================================================
-  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
-    
-    message("Creating standAgeMap")
-    
-    dPath <- file.path(sim@paths$inputPath, "StandAge")
-    if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
-    
-    sim$standAgeMap <- LandR::prepInputsStandAgeMap(
-      rasterToMatch   = sim$PlanningGrid_250m,
-      studyArea       = sim$studyArea,
-      destinationPath = dPath,
-      dataYear        = 2011
-    )
-  }
-  
-  
-  # =========================================================
-  # CPCAD (empty fallback)
+  # CPCAD fallback
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
     
-    message("Creating empty CPCAD layer")
+    message("Creating empty CPCAD")
     
-    sim$CPCAD <- terra::vect(
+    sim$CPCAD <- sf::st_as_sf(
       data.frame(id = numeric(0)),
-      geom = c("x", "y"),
+      coords = c(),
       crs = terra::crs(sim$PlanningGrid_250m)
     )
-  }
-  
-  
-  # =========================================================
-  # Analysis Unit
-  # =========================================================
-  if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
-    
-    message("Creating analysisUnitMap from SCANFI")
-    
-    analysisUnitMap <- sim$LandCover
-    analysisUnitMap[] <- 0
-    
-    analysisUnitMap[sim$LandCover == 210] <- 1
-    analysisUnitMap[sim$LandCover == 220] <- 2
-    analysisUnitMap[sim$LandCover == 230] <- 3
-    analysisUnitMap[sim$LandCover == 240] <- 4
-    
-    sim$analysisUnitMap <- analysisUnitMap
   }
   
   return(invisible(sim))
