@@ -2,3 +2,17 @@
 .Rhistory
 .RData
 .Ruserdata
+# Data folders
+inputs/
+cache/
+
+# Large raster files
+*.tif
+*.zip
+
+# Reproducible checksums
+CHECKSUMS.txt
+
+# RStudio
+.Rproj.user/
+.Rhistory
