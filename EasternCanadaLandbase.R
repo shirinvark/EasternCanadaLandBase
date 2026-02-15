@@ -216,7 +216,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   return(invisible(sim))
 }
-
 ## Summary:
 ## EasternCanadaDataPrep standardizes spatial inputs and
 ## exposes clean, reusable objects for downstream analysis.

@@ -117,11 +117,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 .inputObjects <- function(sim) {
   
   # =========================================================
-  # Stand Age FIRST (Real geographic extent)
+  # 1) Stand Age FIRST (real geographic reference)
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
     
-    message("Loading StandAge FIRST")
+    message("Loading standAgeMap")
     
     dPath <- file.path(sim@paths$inputPath, "StandAge")
     if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
@@ -134,7 +134,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   
   # =========================================================
-  # Planning Grid FROM StandAge
+  # 2) PlanningGrid FROM standAgeMap (CRITICAL FIX)
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
@@ -145,11 +145,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   
   # =========================================================
-  # Study Area FROM PlanningGrid
+  # 3) StudyArea FROM PlanningGrid
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("studyArea")) {
     
-    message("Creating studyArea from PlanningGrid extent")
+    message("Creating studyArea from PlanningGrid")
     
     sim$studyArea <- terra::as.polygons(
       terra::ext(sim$PlanningGrid_250m),
@@ -157,30 +157,13 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
   }
   
-  # =========================================================
-  # Analysis Unit
-  # =========================================================
-  if (is.null(sim$analysisUnitMap)) {
-    
-    message("Creating analysisUnitMap from SCANFI")
-    
-    analysisUnitMap <- sim$LandCover
-    analysisUnitMap[] <- 0
-    
-    analysisUnitMap[sim$LandCover == 210] <- 1
-    analysisUnitMap[sim$LandCover == 220] <- 2
-    analysisUnitMap[sim$LandCover == 230] <- 3
-    analysisUnitMap[sim$LandCover == 240] <- 4
-    
-    sim$analysisUnitMap <- analysisUnitMap
-  }
   
   # =========================================================
-  # LandCover
+  # 4) LandCover (SCANFI) aligned to PlanningGrid
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
     
-    message("Downloading SCANFI LandCover")
+    message("Downloading & aligning SCANFI LandCover")
     
     dPath <- file.path(sim@paths$inputPath, "LandCover")
     if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
@@ -190,27 +173,50 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
       studyArea       = sim$studyArea,
       destinationPath = dPath
     )
+    
+    # Ensure exact alignment
+    sim$LandCover <- terra::resample(
+      sim$LandCover,
+      sim$PlanningGrid_250m,
+      method = "near"
+    )
   }
   
   
   # =========================================================
-  # CPCAD fallback
+  # 5) AnalysisUnit from SCANFI
+  # =========================================================
+  if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
+    
+    message("Creating analysisUnitMap")
+    
+    analysisUnitMap <- sim$LandCover
+    analysisUnitMap[] <- 0
+    
+    analysisUnitMap[sim$LandCover == 210] <- 1  # Conifer
+    analysisUnitMap[sim$LandCover == 220] <- 2  # Deciduous
+    analysisUnitMap[sim$LandCover == 230] <- 3  # Mixed
+    analysisUnitMap[sim$LandCover == 240] <- 4  # Treed wetland
+    
+    sim$analysisUnitMap <- analysisUnitMap
+  }
+  
+  
+  # =========================================================
+  # 6) CPCAD fallback (empty safe sf)
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
     
-    message("Creating empty CPCAD")
+    message("Creating empty CPCAD layer")
     
-    sim$CPCAD <- sf::st_as_sf(
-      data.frame(id = numeric(0)),
-      coords = c(),
-      crs = terra::crs(sim$PlanningGrid_250m)
+    sim$CPCAD <- sf::st_sf(
+      geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
     )
   }
   
   return(invisible(sim))
 }
 
-  
 ## Summary:
 ## EasternCanadaDataPrep standardizes spatial inputs and
 ## exposes clean, reusable objects for downstream analysis.
