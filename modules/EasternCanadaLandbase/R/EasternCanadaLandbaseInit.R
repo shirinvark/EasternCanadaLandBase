@@ -20,7 +20,11 @@ Init <- function(sim) {
     background = 0
   )
   
-  sim$analysisUnitMap[protectedRaster == 1] <- 0
+  sim$analysisUnitMap <- terra::ifel(
+    protectedRaster == 1,
+    0,
+    sim$analysisUnitMap
+  )
   
   # ---- Net Productive Forest ----
   message("Creating net productive forest")
