@@ -13,6 +13,9 @@ cache/
 # Reproducible checksums
 CHECKSUMS.txt
 
+
 # RStudio
 .Rproj.user/
 .Rhistory
+.RData
+.Ruserdata
