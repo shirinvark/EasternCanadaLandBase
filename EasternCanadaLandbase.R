@@ -117,7 +117,54 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 .inputObjects <- function(sim) {
   
   # =========================================================
-  # 1) Stand Age FIRST (real geographic reference)
+  # 1) LandCover FIRST (real spatial reference)
+  # =========================================================
+  if (!SpaDES.core::suppliedElsewhere("LandCover")) {
+    
+    message("Downloading SCANFI LandCover")
+    
+    dPath <- file.path(sim@paths$inputPath, "LandCover")
+    if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
+    
+    # Use small test raster first
+    testRas <- terra::rast(
+      nrows = 200,
+      ncols = 200,
+      xmin = -2600000,
+      xmax = -2550000,
+      ymin = 7000000,
+      ymax = 7050000,
+      crs = "EPSG:3978"
+    )
+    
+    terra::values(testRas) <- 1
+    
+    sim$LandCover <- LandR::prepInputs_SCANFI_LCC_FAO(
+      rasterToMatch = testRas,
+      studyArea     = terra::as.polygons(terra::ext(testRas),
+                                         crs = terra::crs(testRas)),
+      destinationPath = dPath
+    )
+  }
+  
+  
+  # =========================================================
+  # 2) PlanningGrid FROM LandCover
+  # =========================================================
+  sim$PlanningGrid_250m <- terra::rast(sim$LandCover)
+  
+  
+  # =========================================================
+  # 3) StudyArea
+  # =========================================================
+  sim$studyArea <- terra::as.polygons(
+    terra::ext(sim$PlanningGrid_250m),
+    crs = terra::crs(sim$PlanningGrid_250m)
+  )
+  
+  
+  # =========================================================
+  # 4) StandAge aligned to grid
   # =========================================================
   if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
     
@@ -127,6 +174,8 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
     
     sim$standAgeMap <- LandR::prepInputsStandAgeMap(
+      rasterToMatch   = sim$PlanningGrid_250m,
+      studyArea       = sim$studyArea,
       destinationPath = dPath,
       dataYear        = 2011
     )
@@ -134,88 +183,29 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   
   # =========================================================
-  # 2) PlanningGrid FROM standAgeMap (CRITICAL FIX)
+  # 5) AnalysisUnit
   # =========================================================
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
-    
-    message("Creating PlanningGrid from standAgeMap")
-    
-    sim$PlanningGrid_250m <- terra::rast(sim$standAgeMap)
-  }
+  analysisUnitMap <- sim$LandCover
+  analysisUnitMap[] <- 0
+  
+  analysisUnitMap[sim$LandCover == 210] <- 1
+  analysisUnitMap[sim$LandCover == 220] <- 2
+  analysisUnitMap[sim$LandCover == 230] <- 3
+  analysisUnitMap[sim$LandCover == 240] <- 4
+  
+  sim$analysisUnitMap <- analysisUnitMap
   
   
   # =========================================================
-  # 3) StudyArea FROM PlanningGrid
+  # 6) Empty CPCAD
   # =========================================================
-  if (!SpaDES.core::suppliedElsewhere("studyArea")) {
-    
-    message("Creating studyArea from PlanningGrid")
-    
-    sim$studyArea <- terra::as.polygons(
-      terra::ext(sim$PlanningGrid_250m),
-      crs = terra::crs(sim$PlanningGrid_250m)
-    )
-  }
-  
-  
-  # =========================================================
-  # 4) LandCover (SCANFI) aligned to PlanningGrid
-  # =========================================================
-  if (!SpaDES.core::suppliedElsewhere("LandCover")) {
-    
-    message("Downloading & aligning SCANFI LandCover")
-    
-    dPath <- file.path(sim@paths$inputPath, "LandCover")
-    if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
-    
-    sim$LandCover <- LandR::prepInputs_SCANFI_LCC_FAO(
-      rasterToMatch   = sim$PlanningGrid_250m,
-      studyArea       = sim$studyArea,
-      destinationPath = dPath
-    )
-    
-    # Ensure exact alignment
-    sim$LandCover <- terra::resample(
-      sim$LandCover,
-      sim$PlanningGrid_250m,
-      method = "near"
-    )
-  }
-  
-  
-  # =========================================================
-  # 5) AnalysisUnit from SCANFI
-  # =========================================================
-  if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
-    
-    message("Creating analysisUnitMap")
-    
-    analysisUnitMap <- sim$LandCover
-    analysisUnitMap[] <- 0
-    
-    analysisUnitMap[sim$LandCover == 210] <- 1  # Conifer
-    analysisUnitMap[sim$LandCover == 220] <- 2  # Deciduous
-    analysisUnitMap[sim$LandCover == 230] <- 3  # Mixed
-    analysisUnitMap[sim$LandCover == 240] <- 4  # Treed wetland
-    
-    sim$analysisUnitMap <- analysisUnitMap
-  }
-  
-  
-  # =========================================================
-  # 6) CPCAD fallback (empty safe sf)
-  # =========================================================
-  if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
-    
-    message("Creating empty CPCAD layer")
-    
-    sim$CPCAD <- sf::st_sf(
-      geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
-    )
-  }
+  sim$CPCAD <- sf::st_sf(
+    geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
+  )
   
   return(invisible(sim))
 }
+
 ## Summary:
 ## EasternCanadaDataPrep standardizes spatial inputs and
 ## exposes clean, reusable objects for downstream analysis.

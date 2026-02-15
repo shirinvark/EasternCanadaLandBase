@@ -7,11 +7,25 @@ Init <- function(sim) {
   checkObject(sim, "CPCAD", "sf")
   
   # =========================================================
-  # 1) Align ALL rasters to PlanningGrid FIRST
+  # 1) FORCE SAME CRS + ALIGN
   # =========================================================
   
   message("Aligning rasters to PlanningGrid")
   
+  # Project to exact same CRS
+  sim$standAgeMap <- terra::project(
+    sim$standAgeMap,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
+  sim$analysisUnitMap <- terra::project(
+    sim$analysisUnitMap,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
+  # Then snap to exact grid
   sim$standAgeMap <- terra::resample(
     sim$standAgeMap,
     sim$PlanningGrid_250m,
@@ -23,6 +37,7 @@ Init <- function(sim) {
     sim$PlanningGrid_250m,
     method = "near"
   )
+  
   
   # =========================================================
   # 2) Mask Protected Areas
