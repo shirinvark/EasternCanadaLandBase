@@ -73,9 +73,106 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 # =========================================================
 # 
 # =========================================================
-.inputObjects <- function(sim) {
+#.inputObjects <- function(sim) {
   
   # ---- Stand Age ----
+ # if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
+    
+  #  message("Creating standAgeMap")
+    
+   # dPath <- file.path(sim@paths$inputPath, "StandAge")
+    #if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
+    
+    #sim$standAgeMap <- LandR::prepInputsStandAgeMap(
+     # rasterToMatch   = sim$PlanningGrid_250m,
+      #studyArea       = sim$studyArea,
+      #destinationPath = dPath,
+      #dataYear        = 2011
+    #)
+  #}
+  
+  # ---- Analysis Unit ----
+  #if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
+    
+   # message("Creating temporary analysisUnitMap")
+    
+    #analysisUnitMap <- sim$LandCover
+    #analysisUnitMap[] <- 0
+    
+    #analysisUnitMap[sim$LandCover == 210] <- 1
+    #analysisUnitMap[sim$LandCover == 220] <- 2
+    #analysisUnitMap[sim$LandCover == 230] <- 3
+    #analysisUnitMap[sim$LandCover == 240] <- 4
+    
+    #sim$analysisUnitMap <- analysisUnitMap
+  #}
+  
+  
+#  return(invisible(sim))
+#.inputObjects <- function(sim) {
+
+# =========================================================
+# Planning Grid
+# =========================================================
+.inputObjects <- function(sim) {
+  
+  # =========================================================
+  # Planning Grid
+  # =========================================================
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
+    
+    message("Creating dummy PlanningGrid_250m")
+    
+    sim$PlanningGrid_250m <- terra::rast(
+      nrows = 200,
+      ncols = 200,
+      xmin = -85e4,
+      xmax = -80e4,
+      ymin = 45e5,
+      ymax = 50e5,
+      crs = "EPSG:3978"
+    )
+    
+    
+    terra::values(sim$PlanningGrid_250m) <- 1
+  }
+  
+  
+  # =========================================================
+  # Study Area
+  # =========================================================
+  if (!SpaDES.core::suppliedElsewhere("studyArea")) {
+    
+    message("Creating dummy studyArea from grid extent")
+    
+    sim$studyArea <- terra::as.polygons(
+      terra::ext(sim$PlanningGrid_250m),
+      crs = terra::crs(sim$PlanningGrid_250m)
+    )
+  }
+  
+  
+  # =========================================================
+  # Land Cover
+  # =========================================================
+  if (!SpaDES.core::suppliedElsewhere("LandCover")) {
+    
+    message("Downloading SCANFI LandCover")
+    
+    dPath <- file.path(sim@paths$inputPath, "LandCover")
+    if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
+    
+    sim$LandCover <- LandR::prepInputs_SCANFI_LCC_FAO(
+      rasterToMatch   = sim$PlanningGrid_250m,
+      studyArea       = sim$studyArea,
+      destinationPath = dPath
+    )
+  }
+  
+  
+  # =========================================================
+  # Stand Age
+  # =========================================================
   if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
     
     message("Creating standAgeMap")
@@ -91,19 +188,36 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
   }
   
-  # ---- Analysis Unit ----
+  
+  # =========================================================
+  # CPCAD (empty fallback)
+  # =========================================================
+  if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
+    
+    message("Creating empty CPCAD layer")
+    
+    sim$CPCAD <- terra::vect(
+      data.frame(id = numeric(0)),
+      geom = c("x", "y"),
+      crs = terra::crs(sim$PlanningGrid_250m)
+    )
+  }
+  
+  
+  # =========================================================
+  # Analysis Unit
+  # =========================================================
   if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
     
-    message("Creating temporary analysisUnitMap")
+    message("Creating analysisUnitMap from SCANFI")
     
-    lc <- sim$LandCoverAligned
-    
-    analysisUnitMap <- lc
-    
+    analysisUnitMap <- sim$LandCover
     analysisUnitMap[] <- 0
-    analysisUnitMap[lc %in% c(1,2,3)] <- 1
-    analysisUnitMap[lc %in% c(4,5)]   <- 2
-    analysisUnitMap[lc %in% c(6)]     <- 3
+    
+    analysisUnitMap[sim$LandCover == 210] <- 1
+    analysisUnitMap[sim$LandCover == 220] <- 2
+    analysisUnitMap[sim$LandCover == 230] <- 3
+    analysisUnitMap[sim$LandCover == 240] <- 4
     
     sim$analysisUnitMap <- analysisUnitMap
   }
@@ -123,3 +237,4 @@ ggplotFn <- function(data, ...) {
   ggplot2::ggplot(data, ggplot2::aes(TheSample)) +
     ggplot2::geom_histogram(...)
 }
+

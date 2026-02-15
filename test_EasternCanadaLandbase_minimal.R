@@ -16,11 +16,11 @@ library(sf)
 ## 2) SET PATHS (محل دانلود ماژول)
 ## =========================================================
 setPaths(
-  modulePath  = "E:/MODULES_TESTS/modules",
-  inputPath   = "E:/MODULES_TESTS/inputs",
-  outputPath  = "E:/MODULES_TESTS/outputs",
-  cachePath   = "E:/MODULES_TESTS/cache",
-  scratchPath = "E:/MODULES_TESTS/scratch"
+  modulePath  = "E:/EasternCanadaLandBase/modules",
+  inputPath   = "E:/EasternCanadaLandBase/inputs",
+  outputPath  = "E:/EasternCanadaLandBase/outputs",
+  cachePath   = "E:/EasternCanadaLandBase/cache",
+  scratchPath = "E:/EasternCanadaLandBase/scratch"
 )
 
 ## =========================================================
@@ -35,17 +35,17 @@ getModule(
 ## =========================================================
 ## 4) BUILD MINIMAL TEST OBJECTS
 ## =========================================================
-# Planning raster
-PlanningRaster <- rast(
+# PlanningGrid_250m
+PlanningGrid_250m <- rast(
   nrows = 10, ncols = 10,
   res   = 250,
   crs   = "EPSG:5070"
 )
-values(PlanningRaster) <- 1
+values(PlanningGrid_250m) <- 1
 
 # Land cover (dummy)
-LandCoverAligned <- PlanningRaster
-values(LandCoverAligned) <- sample(c(20, 50, 100), ncell(LandCoverAligned), replace = TRUE)
+LandCover <- PlanningGrid_250m
+values(LandCover) <- sample(c(20, 50, 100), ncell(LandCover), replace = TRUE)
 
 # Dummy protected areas
 CPCAD <- st_as_sf(
@@ -64,8 +64,8 @@ sim <- simInit(
   times   = list(start = 1, end = 1),
   modules = "EasternCanadaLandbase",
   objects = list(
-    PlanningRaster   = PlanningRaster,
-    LandCoverAligned = LandCoverAligned,
+    PlanningGrid_250m   = PlanningGrid_250m,
+    LandCover = LandCover,
     CPCAD            = CPCAD
   )
 )
