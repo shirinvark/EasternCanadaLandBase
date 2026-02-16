@@ -43,23 +43,33 @@ Init <- function(sim) {
   # 2) Mask Protected Areas
   # =========================================================
   
-  message("Masking protected areas from analysisUnitMap")
+  # =========================================================
+  # 2) Create Protected Mask (DO NOT MODIFY AU)
+  # =========================================================
+  
+  message("Creating protectedMask")
   
   if (!terra::same.crs(sim$CPCAD, sim$PlanningGrid_250m)) {
     sim$CPCAD <- terra::project(sim$CPCAD, sim$PlanningGrid_250m)
   }
   
-  protectedRaster <- terra::rasterize(
+  sim$protectedMask <- terra::rasterize(
     sim$CPCAD,
     sim$PlanningGrid_250m,
     field = 1,
     background = 0
   )
   
-  sim$analysisUnitMap <- terra::ifel(
-    protectedRaster == 1,
-    0,
-    sim$analysisUnitMap
+  # =========================================================
+  # 3) Forest Mask
+  # =========================================================
+  
+  message("Creating forestedMask")
+  
+  sim$forestedMask <- terra::ifel(
+    sim$analysisUnitMap > 0,
+    1,
+    0
   )
   
   # =========================================================
@@ -70,6 +80,7 @@ Init <- function(sim) {
   
   sim$netProductiveForest <- terra::ifel(
     sim$analysisUnitMap > 0 &
+      sim$protectedMask == 0 &
       !is.na(sim$standAgeMap) &
       sim$standAgeMap > 0,
     1,
@@ -85,8 +96,11 @@ Init <- function(sim) {
     landcover            = sim$LandCover,
     standAgeMap          = sim$standAgeMap,
     analysisUnitMap      = sim$analysisUnitMap,
+    forestedMask         = sim$forestedMask,
+    protectedMask        = sim$protectedMask,
     netProductiveForest  = sim$netProductiveForest
   )
   
   invisible(sim)
-}
+  
+  }

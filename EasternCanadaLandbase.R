@@ -42,6 +42,14 @@ defineModule(sim, list(
     
     createsOutput("analysisUnitMap", "SpatRaster",
                   "Temporary analysis unit raster derived from land cover"),
+    createsOutput("forestedMask", "SpatRaster",
+                  "Binary forest mask"),
+    
+    createsOutput("protectedMask", "SpatRaster",
+                  "Binary protected areas mask"),
+    
+    createsOutput("netProductiveForest", "SpatRaster",
+                  "Harvestable forest mask"),
     
     createsOutput("Landbase", "list",
                   "Derived landbase container")
