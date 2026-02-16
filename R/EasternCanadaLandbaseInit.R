@@ -13,27 +13,26 @@ Init <- function(sim) {
   message("Aligning rasters to PlanningGrid")
   
   # Project to exact same CRS
-  sim$standAgeMap <- terra::project(
+  standAgeAligned <- terra::project(
     sim$standAgeMap,
     sim$PlanningGrid_250m,
     method = "near"
   )
   
-  sim$analysisUnitMap <- terra::project(
+  standAgeAligned <- terra::resample(
+    standAgeAligned,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
+  analysisUnitAligned <- terra::project(
     sim$analysisUnitMap,
     sim$PlanningGrid_250m,
     method = "near"
   )
   
-  # Then snap to exact grid
-  sim$standAgeMap <- terra::resample(
-    sim$standAgeMap,
-    sim$PlanningGrid_250m,
-    method = "near"
-  )
-  
-  sim$analysisUnitMap <- terra::resample(
-    sim$analysisUnitMap,
+  analysisUnitAligned <- terra::resample(
+    analysisUnitAligned,
     sim$PlanningGrid_250m,
     method = "near"
   )
@@ -49,16 +48,19 @@ Init <- function(sim) {
   
   message("Creating protectedMask")
   
-  if (!terra::same.crs(sim$CPCAD, sim$PlanningGrid_250m)) {
-    sim$CPCAD <- terra::project(sim$CPCAD, sim$PlanningGrid_250m)
+  CPCAD_aligned <- sim$CPCAD
+  
+  if (!terra::same.crs(CPCAD_aligned, sim$PlanningGrid_250m)) {
+    CPCAD_aligned <- terra::project(CPCAD_aligned, sim$PlanningGrid_250m)
   }
   
   sim$protectedMask <- terra::rasterize(
-    sim$CPCAD,
+    CPCAD_aligned,
     sim$PlanningGrid_250m,
     field = 1,
     background = 0
   )
+  
   
   # =========================================================
   # 3) Forest Mask
@@ -67,7 +69,7 @@ Init <- function(sim) {
   message("Creating forestedMask")
   
   sim$forestedMask <- terra::ifel(
-    !is.na(sim$analysisUnitMap) & sim$analysisUnitMap > 0,
+    !is.na(analysisUnitAligned) & analysisUnitAligned > 0,
     1,
     0
   )
@@ -80,13 +82,14 @@ Init <- function(sim) {
   message("Creating net productive forest")
   
   sim$netProductiveForest <- terra::ifel(
-    sim$analysisUnitMap > 0 &
+    analysisUnitAligned > 0 &
       sim$protectedMask == 0 &
-      !is.na(sim$standAgeMap) &
-      sim$standAgeMap > 0,
+      !is.na(standAgeAligned) &
+      standAgeAligned > 0,
     1,
     0
   )
+  
   
   # =========================================================
   # 4) Final Landbase container
@@ -95,8 +98,8 @@ Init <- function(sim) {
   sim$Landbase <- list(
     planningRaster       = sim$PlanningGrid_250m,
     landcover            = sim$LandCover,
-    standAgeMap          = sim$standAgeMap,
-    analysisUnitMap      = sim$analysisUnitMap,
+    standAgeMap     = standAgeAligned,
+    analysisUnitMap = analysisUnitAligned,
     forestedMask         = sim$forestedMask,
     protectedMask        = sim$protectedMask,
     netProductiveForest  = sim$netProductiveForest
