@@ -28,6 +28,12 @@ defineModule(sim, list(
                  "Planning grid from EasternCanadaDataPrep"),
     expectsInput("LandCover", "SpatRaster",
                  "land cover raster"),
+    expectsInput("standAgeMap", "SpatRaster",
+                 "Stand age raster from upstream module"),
+    
+    expectsInput("analysisUnitMap", "SpatRaster",
+                 "Analysis unit raster from upstream module"),
+    
     expectsInput("studyArea", "sf",
                  "Study area polygon from upstream module"),
     
@@ -37,11 +43,6 @@ defineModule(sim, list(
   
   outputObjects = data.table::rbindlist(list(
     
-    createsOutput("standAgeMap", "SpatRaster",
-                  "Stand age raster created for AAC calculations"),
-    
-    createsOutput("analysisUnitMap", "SpatRaster",
-                  "Temporary analysis unit raster derived from land cover"),
     createsOutput("forestedMask", "SpatRaster",
                   "Binary forest mask"),
     
@@ -128,20 +129,20 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) Load StandAge RAW (no cropping, no rasterToMatch)
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
+#  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
     
-    message("Loading raw standAgeMap (stand-alone mode)")
+ #   message("Loading raw standAgeMap (stand-alone mode)")
     
-    dPath <- file.path(sim@paths$inputPath, "StandAge")
-    if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
+  #  dPath <- file.path(sim@paths$inputPath, "StandAge")
+   # if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
     
-    targetFile <- file.path(
-      dPath,
-      "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif"
-    )
+    #targetFile <- file.path(
+     # dPath,
+      #"NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif"
+    #)
     
-    sim$standAgeMap <- terra::rast(targetFile)
-  }
+    #sim$standAgeMap <- terra::rast(targetFile)
+  #}
   
   
   # =========================================================
@@ -194,36 +195,36 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 5) AnalysisUnit
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
+  #if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
     
-    message("Creating analysisUnitMap")
+   # message("Creating analysisUnitMap")
     
-    analysisUnitMap <- sim$LandCover
-    analysisUnitMap[] <- 0
+    #analysisUnitMap <- sim$LandCover
+  #  analysisUnitMap[] <- 0
     
-    analysisUnitMap[sim$LandCover == 210] <- 1
-    analysisUnitMap[sim$LandCover == 220] <- 2
-    analysisUnitMap[sim$LandCover == 230] <- 3
-    analysisUnitMap[sim$LandCover == 240] <- 4
+   # analysisUnitMap[sim$LandCover == 210] <- 1
+    #analysisUnitMap[sim$LandCover == 220] <- 2
+    #analysisUnitMap[sim$LandCover == 230] <- 3
+    #analysisUnitMap[sim$LandCover == 240] <- 4
     
-    sim$analysisUnitMap <- analysisUnitMap
-  }
+    #sim$analysisUnitMap <- analysisUnitMap
+  #}
   
   
   # =========================================================
   # 6) Empty CPCAD fallback
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
+  #if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
     
-    message("Creating empty CPCAD")
+   # message("Creating empty CPCAD")
     
-    sim$CPCAD <- sf::st_sf(
-      geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
-    )
-  }
+    #sim$CPCAD <- sf::st_sf(
+     # geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
+    #)
+  #}
   
-  return(invisible(sim))
+ return(invisible(sim))
 }
 
 ## Summary:

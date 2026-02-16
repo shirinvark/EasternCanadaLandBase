@@ -67,10 +67,11 @@ Init <- function(sim) {
   message("Creating forestedMask")
   
   sim$forestedMask <- terra::ifel(
-    sim$analysisUnitMap > 0,
+    !is.na(sim$analysisUnitMap) & sim$analysisUnitMap > 0,
     1,
     0
   )
+  
   
   # =========================================================
   # 3) Net Productive Forest (SAFE VERSION)
