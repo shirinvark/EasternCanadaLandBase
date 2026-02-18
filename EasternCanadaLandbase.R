@@ -181,17 +181,18 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     message("Standalone mode: building NTEMS LandCover")
     
-    lccOut <- LandR::prepInputs_NTEMS_LCC_FAO(
-      year = 2001,
-      cropTo = sim$PlanningGrid_250m,
-      projectTo = sim$PlanningGrid_250m,
-      disturbedCode = 240,
-      faoYear = NULL
-    )
+    message("Standalone mode: reading NTEMS directly")
     
+    nt_path <- file.path(sim@paths$inputPath, "CA_forest_VLCE2_2001.tif")
     
+    nt <- terra::rast(nt_path)
     
-    sim$LandCover <- lccOut$rstLCC
+    # align to planning grid
+    nt <- terra::project(nt, sim$PlanningGrid_250m, method = "near")
+    nt <- terra::resample(nt, sim$PlanningGrid_250m, method = "near")
+    
+    sim$LandCover <- nt
+    
   }
   
   # =========================================================
