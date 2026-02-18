@@ -136,16 +136,19 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    message("Standalone mode: creating demo PlanningGrid")
-    
-    ext <- terra::ext(0, 50000, 0, 50000)
+    message("Standalone mode: creating demo PlanningGrid (correct meters)")
     
     sim$PlanningGrid_250m <- terra::rast(
-      ext,
-      resolution = 250,
+      nrows = 200,
+      ncols = 200,
+      xmin = 0,
+      xmax = 50000,
+      ymin = 0,
+      ymax = 50000,
       crs = "EPSG:5070"
     )
   }
+  
   
   
   
