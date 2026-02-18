@@ -131,35 +131,30 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) PlanningGrid
   # =========================================================
   
+  # =========================================================
+  # 1) PlanningGrid
+  # =========================================================
+  
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    message("Standalone mode: creating PlanningGrid")
+    message("Standalone mode: creating PlanningGrid inside NTEMS extent")
     
-    if (SpaDES.core::suppliedElsewhere("LandCover")) {
-      
-      e <- terra::ext(sim$LandCover)
-      
-      sim$PlanningGrid_250m <- terra::rast(
-        nrows = 50, ncols = 50,
-        xmin = e[1],
-        xmax = e[1] + 12500,
-        ymin = e[3],
-        ymax = e[3] + 12500,
-        crs  = terra::crs(sim$LandCover)
-      )
-      
-    } else {
-      
-      # Safe grid inside Canada (EPSG:5070)
-      sim$PlanningGrid_250m <- terra::rast(
-        nrows = 50, ncols = 50,
-        xmin = -1.5e6,
-        xmax = -1.5e6 + 12500,
-        ymin =  1.5e6,
-        ymax =  1.5e6 + 12500,
-        crs  = "EPSG:3978"
-      )
-    }
+    # Read NTEMS once to get real extent + CRS
+    nt_path <- file.path(sim@paths$inputPath, "CA_forest_VLCE2_2001.tif")
+    nt <- terra::rast(nt_path)
+    
+    e <- terra::ext(nt)
+    
+    # Create small grid safely inside NTEMS
+    sim$PlanningGrid_250m <- terra::rast(
+      nrows = 50,
+      ncols = 50,
+      xmin  = e$xmin + 20000,
+      xmax  = e$xmin + 20000 + (50 * 250),
+      ymin  = e$ymin + 20000,
+      ymax  = e$ymin + 20000 + (50 * 250),
+      crs   = terra::crs(nt)
+    )
     
     terra::values(sim$PlanningGrid_250m) <- 1
   }
