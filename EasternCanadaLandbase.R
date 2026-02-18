@@ -133,20 +133,18 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    message("Standalone mode: creating demo PlanningGrid (correct meters)")
+    message("Standalone mode: creating demo PlanningGrid")
     
     sim$PlanningGrid_250m <- terra::rast(
-      nrows = 200,
-      ncols = 200,
-      xmin = 0,
-      xmax = 50000,
-      ymin = 0,
-      ymax = 50000,
-      crs = "EPSG:5070"
+      nrows = 50, ncols = 50,
+      xmin = 0, xmax = 12500,
+      ymin = 0, ymax = 12500,
+      res  = 250,
+      crs  = "EPSG:5070"
     )
+    
+    terra::values(sim$PlanningGrid_250m) <- 1
   }
-  
-  
   
   
   # =========================================================
@@ -155,20 +153,14 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("studyArea")) {
     
-    message("Standalone mode: creating studyArea from PlanningGrid")
+    message("Standalone mode: creating studyArea")
     
     sim$studyArea <- terra::as.polygons(
       terra::ext(sim$PlanningGrid_250m),
       crs = terra::crs(sim$PlanningGrid_250m)
     )
-  } else {
-    message("studyArea provided from upstream module")
   }
   
-  
-  # =========================================================
-  # 3) LandCover
-  # =========================================================
   
   # =========================================================
   # 3) LandCover
@@ -178,18 +170,14 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     message("Standalone mode: creating synthetic LandCover")
     
-    sim$LandCover <- sim$PlanningGrid_250m
+    sim$LandCover <- terra::rast(sim$PlanningGrid_250m)
     
-    # create synthetic forest classes
     sim$LandCover[] <- sample(
-      c(0, 210, 220, 230),   # 0 = non forest
+      c(0, 210, 220, 230),
       size = terra::ncell(sim$LandCover),
       replace = TRUE,
       prob = c(0.3, 0.25, 0.25, 0.20)
     )
-    
-  } else {
-    message("LandCover provided from upstream module")
   }
   
   
@@ -204,9 +192,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     sim$CPCAD <- sf::st_sf(
       geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
     )
-    
-  } else {
-    message("CPCAD provided from upstream module")
   }
   
   
@@ -218,11 +203,8 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     message("Standalone mode: creating zero riparian raster")
     
-    sim$riparianFraction <- sim$PlanningGrid_250m
+    sim$riparianFraction <- terra::rast(sim$PlanningGrid_250m)
     sim$riparianFraction[] <- 0
-    
-  } else {
-    message("riparianFraction provided from upstream module")
   }
   
   
@@ -232,23 +214,20 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
     
-    message("Standalone mode: generating realistic standAgeMap")
+    message("Standalone mode: generating standAgeMap")
     
-    sim$standAgeMap <- sim$PlanningGrid_250m
+    sim$standAgeMap <- terra::rast(sim$PlanningGrid_250m)
     
     sim$standAgeMap[] <- sample(
       20:120,
       size = terra::ncell(sim$standAgeMap),
       replace = TRUE
     )
-    
-  } else {
-    message("standAgeMap provided from upstream module")
   }
-  
   
   return(invisible(sim))
 }
+
 
 ## Summary:
 ## EasternCanadaLandbase builds the effective harvestable
