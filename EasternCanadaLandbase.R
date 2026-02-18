@@ -181,12 +181,14 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     message("Standalone mode: building NTEMS LandCover")
     
-    lccOut <- LandR::prepInputs_NTEMS_LCC(
+    lccOut <- LandR::prepInputs_NTEMS_LCC_FAO(
       year = 2001,
       cropTo = sim$PlanningGrid_250m,
       projectTo = sim$PlanningGrid_250m,
-      disturbedCode = 240
+      disturbedCode = 240,
+      faoYear = NULL
     )
+    
     
     
     sim$LandCover <- lccOut$rstLCC
