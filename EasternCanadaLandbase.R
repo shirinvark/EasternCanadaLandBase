@@ -125,30 +125,56 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 # =========================================================
 # Planning Grid
 # =========================================================
+# =========================================================
+# .inputObjects
+# =========================================================
 .inputObjects <- function(sim) {
   
   # =========================================================
-  # 1) StudyArea fallback
+  # 1) PlanningGrid
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
+    
+    message("Standalone mode: creating demo PlanningGrid")
+    
+    # یک extent کوچک تستی در EPSG:5070
+    ext <- terra::ext(-90, -85, 45, 48)
+    
+    sim$PlanningGrid_250m <- terra::rast(
+      ext,
+      resolution = 250,
+      crs = "EPSG:5070"
+    )
+  } else {
+    message("PlanningGrid_250m provided from upstream module")
+  }
+  
+  
+  # =========================================================
+  # 2) StudyArea
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("studyArea")) {
     
-    message("Standalone mode: creating studyArea from PlanningGrid extent")
+    message("Standalone mode: creating studyArea from PlanningGrid")
     
     sim$studyArea <- terra::as.polygons(
       terra::ext(sim$PlanningGrid_250m),
       crs = terra::crs(sim$PlanningGrid_250m)
     )
+  } else {
+    message("studyArea provided from upstream module")
   }
   
   
   # =========================================================
-  # 2) LandCover fallback
+  # 3) LandCover
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
     
-    message("Standalone mode: generating LandCover (SCANFI)")
+    message("Standalone mode: generating SCANFI LandCover")
     
     dPath <- file.path(sim@paths$inputPath, "LandCover")
     if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
@@ -158,11 +184,14 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
       studyArea       = sim$studyArea,
       destinationPath = dPath
     )
+    
+  } else {
+    message("LandCover provided from upstream module")
   }
   
   
   # =========================================================
-  # 3) CPCAD fallback (empty protected layer)
+  # 4) CPCAD
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
@@ -172,11 +201,14 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     sim$CPCAD <- sf::st_sf(
       geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
     )
+    
+  } else {
+    message("CPCAD provided from upstream module")
   }
   
   
   # =========================================================
-  # 4) Riparian fallback (zero influence)
+  # 5) Riparian
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("riparianFraction")) {
@@ -185,25 +217,35 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     sim$riparianFraction <- sim$PlanningGrid_250m
     sim$riparianFraction[] <- 0
+    
+  } else {
+    message("riparianFraction provided from upstream module")
   }
   
   
   # =========================================================
-  # 5) StandAge fallback (dummy constant age)
+  # 6) StandAge
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
     
-    message("Standalone mode: creating dummy standAgeMap")
+    message("Standalone mode: generating realistic standAgeMap")
     
     sim$standAgeMap <- sim$PlanningGrid_250m
-    sim$standAgeMap[] <- 50
+    
+    sim$standAgeMap[] <- sample(
+      20:120,
+      size = terra::ncell(sim$standAgeMap),
+      replace = TRUE
+    )
+    
+  } else {
+    message("standAgeMap provided from upstream module")
   }
   
   
   return(invisible(sim))
 }
-
 
 ## Summary:
 ## EasternCanadaLandbase builds the effective harvestable
