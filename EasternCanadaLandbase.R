@@ -30,8 +30,6 @@ defineModule(sim, list(
                  "land cover raster"),
     expectsInput("standAgeMap", "SpatRaster",
                  "Stand age raster from upstream module"),
-    expectsInput("studyArea", "sf",
-                 "Study area polygon from upstream module"),
     expectsInput("riparianFraction", "SpatRaster",
                  "Fractional riparian influence raster"),
     expectsInput("CPCAD", "sf",
@@ -67,7 +65,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (eventType == "init") {
     
-    sim <- .inputObjects(sim)
+    sim <- .inputObjects(sim)   # حتما اول این
     sim <- Init(sim)
     
     return(invisible(sim))
@@ -75,7 +73,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   noEventWarning(sim)
 }
-
 
 
 # =========================================================
