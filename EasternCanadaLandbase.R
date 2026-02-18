@@ -133,37 +133,36 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    message("Standalone mode: creating PlanningGrid inside LandCover extent")
+    message("Standalone mode: creating PlanningGrid")
     
     if (SpaDES.core::suppliedElsewhere("LandCover")) {
       
       e <- terra::ext(sim$LandCover)
       
       sim$PlanningGrid_250m <- terra::rast(
-        xmin = e[1] + 100000,
-        xmax = e[1] + 100000 + (50 * 250),
-        ymin = e[3] + 100000,
-        ymax = e[3] + 100000 + (50 * 250),
-        res  = 250,
+        nrows = 50, ncols = 50,
+        xmin = e[1],
+        xmax = e[1] + 12500,
+        ymin = e[3],
+        ymax = e[3] + 12500,
         crs  = terra::crs(sim$LandCover)
       )
       
     } else {
       
-      # fallback safe grid
+      # Safe grid inside Canada (EPSG:5070)
       sim$PlanningGrid_250m <- terra::rast(
         nrows = 50, ncols = 50,
-        xmin = 0, xmax = 12500,
-        ymin = 0, ymax = 12500,
-        res  = 250,
+        xmin = -1.5e6,
+        xmax = -1.5e6 + 12500,
+        ymin =  1.5e6,
+        ymax =  1.5e6 + 12500,
         crs  = "EPSG:5070"
       )
     }
     
     terra::values(sim$PlanningGrid_250m) <- 1
   }
-  
-  
   
   # =========================================================
   # 2) StudyArea
@@ -179,9 +178,8 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
   }
   
-  
   # =========================================================
-  # 3) LandCover
+  # 3) LandCover (NTEMS)
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
@@ -199,8 +197,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     sim$LandCover <- lccOut$rstLCC
   }
   
-  
-  
   # =========================================================
   # 4) CPCAD
   # =========================================================
@@ -214,7 +210,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
   }
   
-  
   # =========================================================
   # 5) Riparian
   # =========================================================
@@ -227,7 +222,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     sim$riparianFraction[] <- 0
   }
   
-  
   # =========================================================
   # 6) StandAge
   # =========================================================
@@ -237,7 +231,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     message("Standalone mode: generating standAgeMap")
     
     sim$standAgeMap <- terra::rast(sim$PlanningGrid_250m)
-    
     sim$standAgeMap[] <- sample(
       20:120,
       size = terra::ncell(sim$standAgeMap),
