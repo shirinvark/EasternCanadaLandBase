@@ -133,18 +133,36 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    message("Standalone mode: creating demo PlanningGrid")
+    message("Standalone mode: creating PlanningGrid inside LandCover extent")
     
-    sim$PlanningGrid_250m <- terra::rast(
-      nrows = 50, ncols = 50,
-      xmin = 0, xmax = 12500,
-      ymin = 0, ymax = 12500,
-      res  = 250,
-      crs  = "EPSG:5070"
-    )
+    if (SpaDES.core::suppliedElsewhere("LandCover")) {
+      
+      e <- terra::ext(sim$LandCover)
+      
+      sim$PlanningGrid_250m <- terra::rast(
+        xmin = e[1] + 100000,
+        xmax = e[1] + 100000 + (50 * 250),
+        ymin = e[3] + 100000,
+        ymax = e[3] + 100000 + (50 * 250),
+        res  = 250,
+        crs  = terra::crs(sim$LandCover)
+      )
+      
+    } else {
+      
+      # fallback safe grid
+      sim$PlanningGrid_250m <- terra::rast(
+        nrows = 50, ncols = 50,
+        xmin = 0, xmax = 12500,
+        ymin = 0, ymax = 12500,
+        res  = 250,
+        crs  = "EPSG:5070"
+      )
+    }
     
     terra::values(sim$PlanningGrid_250m) <- 1
   }
+  
   
   
   # =========================================================
