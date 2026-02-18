@@ -34,47 +34,51 @@ getModule(
 )
 
 ## =========================================================
-## 4) BUILD TEST DATA
+## 4) BUILD TEST DATA (SAFE VERSION)
 ## =========================================================
 
-# ---- Planning grid (EPSG:5070, 250m) ----
-PlanningGrid_250m <- rast(
-  nrows = 50, ncols = 50,
-  xmin = 0, xmax = 12500,
-  ymin = 0, ymax = 12500,
-  crs  = "EPSG:5070"
-)
-values(PlanningGrid_250m) <- 1
+# ---- Load NTEMS once to get correct CRS + extent ----
+nt <- rast("E:/EasternCanadaLandBase/CA_forest_VLCE2_2001.tif")
+e  <- ext(nt)
 
+# ---- Planning grid INSIDE NTEMS extent ----
+PlanningGrid_250m <- rast(
+  nrows = 50,
+  ncols = 50,
+  xmin  = e$xmin + 20000,
+  xmax  = e$xmin + 20000 + (50 * 250),
+  ymin  = e$ymin + 20000,
+  ymax  = e$ymin + 20000 + (50 * 250),
+  crs   = crs(nt)
+)
+
+values(PlanningGrid_250m) <- 1
 
 # ---- Study Area polygon (from grid extent) ----
 studyArea <- as.polygons(ext(PlanningGrid_250m)) |>
   st_as_sf()
 
-
 # ---- Stand Age ----
 standAgeMap <- PlanningGrid_250m
 values(standAgeMap) <- sample(1:120, ncell(standAgeMap), replace = TRUE)
 
-
 # ---- Riparian (fractional 0–0.4 random) ----
 riparianFraction <- PlanningGrid_250m
 values(riparianFraction) <- runif(ncell(riparianFraction), 0, 0.4)
-
 
 # ---- Dummy protected polygon ----
 CPCAD <- st_as_sf(
   st_sfc(
     st_polygon(list(
       matrix(c(
-        2000,2000,
-        8000,2000,
-        8000,8000,
-        2000,8000,
-        2000,2000
+        xmin(PlanningGrid_250m)+2000, ymin(PlanningGrid_250m)+2000,
+        xmin(PlanningGrid_250m)+8000, ymin(PlanningGrid_250m)+2000,
+        xmin(PlanningGrid_250m)+8000, ymin(PlanningGrid_250m)+8000,
+        xmin(PlanningGrid_250m)+2000, ymin(PlanningGrid_250m)+8000,
+        xmin(PlanningGrid_250m)+2000, ymin(PlanningGrid_250m)+2000
       ), ncol = 2, byrow = TRUE)
     )),
-    crs = 5070
+    crs = st_crs(studyArea)
   )
 )
 
@@ -90,13 +94,12 @@ sim <- simInit(
     standAgeMap       = standAgeMap,
     riparianFraction  = riparianFraction,
     CPCAD             = CPCAD
-    # ❗ LandCover عمداً داده نشده
+    # LandCover عمداً داده نمی‌شود
     # ماژول خودش NTEMS می‌سازد
   )
 )
 
 sim <- spades(sim)
-
 
 ## =========================================================
 ## 6) OUTPUT CHECKS
@@ -132,6 +135,6 @@ print(
 )
 
 cat("\nUnique LandCover classes after alignment:\n")
-print(terra::freq(sim$LandCover)[1:10, ])
+print(head(freq(sim$LandCover), 10))
 
 cat("\n---- TEST COMPLETE ----\n")

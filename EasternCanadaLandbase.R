@@ -183,11 +183,12 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     lccOut <- LandR::prepInputs_NTEMS_LCC_FAO(
       year = 2001,
-      maskTo = sim$studyArea,
       cropTo = sim$PlanningGrid_250m,
       projectTo = sim$PlanningGrid_250m,
-      disturbedCode = 240
+      disturbedCode = 240,
+      useFAO = FALSE
     )
+    
     
     sim$LandCover <- lccOut$rstLCC
   }
