@@ -77,12 +77,12 @@ Init <- function(sim) {
   forestProductiveClasses <- c(210, 220, 230)
   
   sim$forestBase <- terra::ifel(
-    landCoverAligned %in% forestProductiveClasses,
+    landCoverAligned == 210 |
+      landCoverAligned == 220 |
+      landCoverAligned == 230,
     1,
     0
   )
-  
-  
   
   
   # =========================================================
