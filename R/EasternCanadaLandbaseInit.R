@@ -64,6 +64,10 @@ Init <- function(sim) {
   )
   
   
+  message("DEBUG: checking landCoverAligned")
+  print(landCoverAligned)
+  print(class(landCoverAligned))
+  print(terra::nlyr(landCoverAligned))
   
   
   # =========================================================
@@ -73,6 +77,14 @@ Init <- function(sim) {
   message("Creating base forest mask")
   
   forestProductiveClasses <- c(210, 220, 230)
+  message("DEBUG START")
+  
+  print(landCoverAligned)
+  print(class(landCoverAligned))
+  print(terra::nlyr(landCoverAligned))
+  print(terra::is.factor(landCoverAligned))
+  
+  message("DEBUG END")
   
   sim$forestBase <- terra::ifel(
     landCoverAligned%in% forestProductiveClasses,
