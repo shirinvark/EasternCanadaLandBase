@@ -30,32 +30,34 @@ defineModule(sim, list(
                  "land cover raster"),
     expectsInput("standAgeMap", "SpatRaster",
                  "Stand age raster from upstream module"),
-    
-    expectsInput("analysisUnitMap", "SpatRaster",
-                 "Analysis unit raster from upstream module"),
-    
     expectsInput("studyArea", "sf",
                  "Study area polygon from upstream module"),
-    
+    expectsInput("riparianFraction", "SpatRaster",
+                 "Fractional riparian influence raster"),
     expectsInput("CPCAD", "sf",
                  "Protected areas")
-  ), fill = TRUE),
+  ), fill = TRUE)
+  ,
   
   outputObjects = data.table::rbindlist(list(
-    
-    createsOutput("forestedMask", "SpatRaster",
-                  "Binary forest mask"),
     
     createsOutput("protectedMask", "SpatRaster",
                   "Binary protected areas mask"),
     
-    createsOutput("netProductiveForest", "SpatRaster",
-                  "Harvestable forest mask"),
+    createsOutput("forestBase", "SpatRaster",
+                  "Binary forest mask excluding wetlands"),
+    
+    createsOutput("merchantableForest", "SpatRaster",
+                  "Effective forest area after protected and riparian reduction"),
+    
+    createsOutput("analysisUnitMap", "SpatRaster",
+                  "Masked analysis unit raster"),
     
     createsOutput("Landbase", "list",
                   "Derived landbase container")
     
   ), fill = TRUE)
+  
 ))
 
 # =========================================================
@@ -126,44 +128,12 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 .inputObjects <- function(sim) {
   
   # =========================================================
-  # 1) Load StandAge RAW (no cropping, no rasterToMatch)
-  # =========================================================
-  
-#  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
-    
- #   message("Loading raw standAgeMap (stand-alone mode)")
-    
-  #  dPath <- file.path(sim@paths$inputPath, "StandAge")
-   # if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
-    
-    #targetFile <- file.path(
-     # dPath,
-      #"NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif"
-    #)
-    
-    #sim$standAgeMap <- terra::rast(targetFile)
-  #}
-  
-  
-  # =========================================================
-  # 2) Create PlanningGrid FROM StandAge
-  # =========================================================
-  
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
-    
-    message("Creating PlanningGrid from standAgeMap")
-    
-    sim$PlanningGrid_250m <- terra::rast(sim$standAgeMap)
-  }
-  
-  
-  # =========================================================
-  # 3) Create StudyArea FROM PlanningGrid
+  # 1) StudyArea fallback
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("studyArea")) {
     
-    message("Creating studyArea from PlanningGrid extent")
+    message("Standalone mode: creating studyArea from PlanningGrid extent")
     
     sim$studyArea <- terra::as.polygons(
       terra::ext(sim$PlanningGrid_250m),
@@ -173,12 +143,12 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   
   # =========================================================
-  # 4) LandCover (SCANFI aligned to PlanningGrid)
+  # 2) LandCover fallback
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
     
-    message("Downloading SCANFI LandCover")
+    message("Standalone mode: generating LandCover (SCANFI)")
     
     dPath <- file.path(sim@paths$inputPath, "LandCover")
     if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
@@ -192,45 +162,53 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   
   # =========================================================
-  # 5) AnalysisUnit
+  # 3) CPCAD fallback (empty protected layer)
   # =========================================================
   
-  #if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
+  if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
     
-   # message("Creating analysisUnitMap")
+    message("Standalone mode: creating empty CPCAD")
     
-    #analysisUnitMap <- sim$LandCover
-  #  analysisUnitMap[] <- 0
-    
-   # analysisUnitMap[sim$LandCover == 210] <- 1
-    #analysisUnitMap[sim$LandCover == 220] <- 2
-    #analysisUnitMap[sim$LandCover == 230] <- 3
-    #analysisUnitMap[sim$LandCover == 240] <- 4
-    
-    #sim$analysisUnitMap <- analysisUnitMap
-  #}
+    sim$CPCAD <- sf::st_sf(
+      geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
+    )
+  }
   
   
   # =========================================================
-  # 6) Empty CPCAD fallback
+  # 4) Riparian fallback (zero influence)
   # =========================================================
   
-  #if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
+  if (!SpaDES.core::suppliedElsewhere("riparianFraction")) {
     
-   # message("Creating empty CPCAD")
+    message("Standalone mode: creating zero riparian raster")
     
-    #sim$CPCAD <- sf::st_sf(
-     # geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
-    #)
-  #}
+    sim$riparianFraction <- sim$PlanningGrid_250m
+    sim$riparianFraction[] <- 0
+  }
   
- return(invisible(sim))
+  
+  # =========================================================
+  # 5) StandAge fallback (dummy constant age)
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
+    
+    message("Standalone mode: creating dummy standAgeMap")
+    
+    sim$standAgeMap <- sim$PlanningGrid_250m
+    sim$standAgeMap[] <- 50
+  }
+  
+  
+  return(invisible(sim))
 }
 
+
 ## Summary:
-## EasternCanadaDataPrep standardizes spatial inputs and
-## exposes clean, reusable objects for downstream analysis.
-##
+## EasternCanadaLandbase builds the effective harvestable
+## planning landbase from prepared spatial inputs.
+
 ## Policy interpretation, ecological modeling, and harvest
 ## decisions are intentionally excluded from this module.
 

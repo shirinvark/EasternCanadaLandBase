@@ -3,47 +3,44 @@ Init <- function(sim) {
   checkObject(sim, "PlanningGrid_250m", "SpatRaster")
   checkObject(sim, "LandCover", "SpatRaster")
   checkObject(sim, "standAgeMap", "SpatRaster")
-  checkObject(sim, "analysisUnitMap", "SpatRaster")
   checkObject(sim, "CPCAD", "sf")
+  checkObject(sim, "riparianFraction", "SpatRaster")
   
   # =========================================================
-  # 1) FORCE SAME CRS + ALIGN
+  # 1) ALIGN ALL RASTERS
   # =========================================================
   
   message("Aligning rasters to PlanningGrid")
   
-  # Project to exact same CRS
-  standAgeAligned <- terra::project(
-    sim$standAgeMap,
+  standAgeAligned <- terra::project(sim$standAgeMap,
+                                    sim$PlanningGrid_250m,
+                                    method = "near")
+  standAgeAligned <- terra::resample(standAgeAligned,
+                                     sim$PlanningGrid_250m,
+                                     method = "near")
+  
+  riparianAligned <- terra::project(sim$riparianFraction,
+                                    sim$PlanningGrid_250m,
+                                    method = "near")
+  riparianAligned <- terra::resample(riparianAligned,
+                                     sim$PlanningGrid_250m,
+                                     method = "near")
+  # Align LandCover
+  landCoverAligned <- terra::project(
+    sim$LandCover,
     sim$PlanningGrid_250m,
     method = "near"
   )
   
-  standAgeAligned <- terra::resample(
-    standAgeAligned,
-    sim$PlanningGrid_250m,
-    method = "near"
-  )
-  
-  analysisUnitAligned <- terra::project(
-    sim$analysisUnitMap,
-    sim$PlanningGrid_250m,
-    method = "near"
-  )
-  
-  analysisUnitAligned <- terra::resample(
-    analysisUnitAligned,
+  landCoverAligned <- terra::resample(
+    landCoverAligned,
     sim$PlanningGrid_250m,
     method = "near"
   )
   
   
   # =========================================================
-  # 2) Mask Protected Areas
-  # =========================================================
-  
-  # =========================================================
-  # 2) Create Protected Mask (DO NOT MODIFY AU)
+  # 2) PROTECTED MASK
   # =========================================================
   
   message("Creating protectedMask")
@@ -54,35 +51,54 @@ Init <- function(sim) {
     CPCAD_aligned <- terra::project(CPCAD_aligned, sim$PlanningGrid_250m)
   }
   
-  sim$protectedMask <- terra::rasterize(
+  protTmp <- terra::rasterize(
     CPCAD_aligned,
     sim$PlanningGrid_250m,
-    field = 1,
-    background = 0
+    field = 1
+  )
+  
+  sim$protectedMask <- terra::ifel(
+    is.na(protTmp),
+    0,
+    1
   )
   
   
+  
+  
   # =========================================================
-  # 3) Forest Mask
+  # 3) FOREST BASE (exclude wetlands)
   # =========================================================
   
-  message("Creating forestedMask")
+  message("Creating base forest mask")
   
-  sim$forestedMask <- terra::ifel(
-    !is.na(analysisUnitAligned) & analysisUnitAligned > 0,
+  forestProductiveClasses <- c(210, 220, 230)
+  
+  sim$forestBase <- terra::ifel(
+    landCoverAligned%in% forestProductiveClasses,
     1,
     0
   )
   
+  # =========================================================
+  # 4) BUILD SIMPLE ANALYSIS UNIT (DEV MODE)
+  # =========================================================
+  
+  message("Building simple analysisUnitMap")
+  
+  analysisUnitMap <- sim$PlanningGrid_250m
+  analysisUnitMap[] <- NA
+  
+  analysisUnitMap[landCoverAligned == 210] <- 1
+  analysisUnitMap[landCoverAligned == 220] <- 2
+  analysisUnitMap[landCoverAligned == 230] <- 3
   
   # =========================================================
-  # 3) Net Productive Forest (SAFE VERSION)
+  # 5) BASE MASK (forest + protected + age)
   # =========================================================
   
-  message("Creating net productive forest")
-  
-  sim$netProductiveForest <- terra::ifel(
-    analysisUnitAligned > 0 &
+  baseMask <- terra::ifel(
+    sim$forestBase == 1 &
       sim$protectedMask == 0 &
       !is.na(standAgeAligned) &
       standAgeAligned > 0,
@@ -92,19 +108,40 @@ Init <- function(sim) {
   
   
   # =========================================================
-  # 4) Final Landbase container
+  # 6) APPLY RIPARIAN REDUCTION
+  # =========================================================
+  riparianAligned <- terra::clamp(riparianAligned, 0, 1)
+  
+  message("Applying riparian reduction")
+  
+  sim$merchantableForest <- baseMask * (1 - riparianAligned)
+  
+  # =========================================================
+  # 7) MASK ANALYSIS UNIT
   # =========================================================
   
+  message("Masking analysis units by merchantable forest")
+  
+  analysisUnitMasked <- terra::ifel(
+    sim$merchantableForest > 0,
+    analysisUnitMap,
+    NA
+  )
+  
+  # =========================================================
+  # 8) FINAL LANDBASE
+  # =========================================================
+  sim$analysisUnitMap <- analysisUnitMasked
+  
   sim$Landbase <- list(
-    planningRaster       = sim$PlanningGrid_250m,
-    landcover            = sim$LandCover,
-    standAgeMap     = standAgeAligned,
-    analysisUnitMap = analysisUnitAligned,
-    forestedMask         = sim$forestedMask,
-    protectedMask        = sim$protectedMask,
-    netProductiveForest  = sim$netProductiveForest
+    planningRaster      = sim$PlanningGrid_250m,
+    landcover           = landCoverAligned,
+    standAgeMap         = standAgeAligned,
+    analysisUnitMap     = sim$analysisUnitMap,
+    forestBase          = sim$forestBase,
+    protectedMask       = sim$protectedMask,
+    merchantableForest  = sim$merchantableForest
   )
   
   invisible(sim)
-  
-  }
+}
