@@ -138,17 +138,15 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     message("Standalone mode: creating demo PlanningGrid")
     
-    # یک extent کوچک تستی در EPSG:5070
-    ext <- terra::ext(-90, -85, 45, 48)
+    ext <- terra::ext(0, 50000, 0, 50000)
     
     sim$PlanningGrid_250m <- terra::rast(
       ext,
       resolution = 250,
       crs = "EPSG:5070"
     )
-  } else {
-    message("PlanningGrid_250m provided from upstream module")
   }
+  
   
   
   # =========================================================

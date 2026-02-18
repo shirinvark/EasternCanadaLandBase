@@ -93,43 +93,31 @@ sim <- spades(sim)
 ## 6) OUTPUT CHECKS
 ## =========================================================
 
-cat("\n---- BASIC CHECKS ----\n")
-
-print(names(sim))
-
-cat("\nResolution check:\n")
-print(res(sim$analysisUnitMap))
-print(res(sim$standAgeMap))
-
-cat("\nExtent check:\n")
-print(ext(sim$analysisUnitMap))
-print(ext(sim$standAgeMap))
-
 cat("\n---- LOGICAL CHECKS ----\n")
 
-cat("Forested cells:\n")
-print(global(sim$forestedMask, "sum", na.rm = TRUE))
+cat("Forest base cells:\n")
+print(global(sim$forestBase, "sum", na.rm = TRUE))
 
 cat("Protected cells:\n")
 print(global(sim$protectedMask, "sum", na.rm = TRUE))
 
-cat("Net productive cells:\n")
-print(global(sim$netProductiveForest, "sum", na.rm = TRUE))
+cat("Merchantable cells:\n")
+print(global(sim$merchantableForest, "sum", na.rm = TRUE))
 
-cat("\nCheck: No protected cell should be productive\n")
+cat("\nCheck: No protected cell should be merchantable\n")
 print(
   global(
-    sim$netProductiveForest == 1 &
+    sim$merchantableForest > 0 &
       sim$protectedMask == 1,
     "sum"
   )
 )
 
-cat("\nCheck: Productive <= Forested\n")
+cat("\nCheck: Merchantable must be subset of forestBase\n")
 print(
   global(
-    sim$netProductiveForest == 1 &
-      sim$forestedMask == 0,
+    sim$merchantableForest > 0 &
+      sim$forestBase == 0,
     "sum"
   )
 )
