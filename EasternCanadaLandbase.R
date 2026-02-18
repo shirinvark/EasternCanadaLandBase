@@ -157,7 +157,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
         xmax = -1.5e6 + 12500,
         ymin =  1.5e6,
         ymax =  1.5e6 + 12500,
-        crs  = "EPSG:5070"
+        crs  = "EPSG:3978"
       )
     }
     
