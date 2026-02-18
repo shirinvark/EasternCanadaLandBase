@@ -186,17 +186,19 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
     
-    message("Standalone mode: creating synthetic LandCover")
+    message("Standalone mode: building NTEMS LandCover")
     
-    sim$LandCover <- terra::rast(sim$PlanningGrid_250m)
-    
-    sim$LandCover[] <- sample(
-      c(0, 210, 220, 230),
-      size = terra::ncell(sim$LandCover),
-      replace = TRUE,
-      prob = c(0.3, 0.25, 0.25, 0.20)
+    lccOut <- LandR::prepInputs_NTEMS_LCC_FAO(
+      year = 2001,
+      maskTo = sim$studyArea,
+      cropTo = sim$PlanningGrid_250m,
+      projectTo = sim$PlanningGrid_250m,
+      disturbedCode = 240
     )
+    
+    sim$LandCover <- lccOut$rstLCC
   }
+  
   
   
   # =========================================================

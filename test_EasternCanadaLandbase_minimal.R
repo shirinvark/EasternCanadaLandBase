@@ -11,6 +11,7 @@ library(SpaDES.core)
 library(SpaDES.project)
 library(terra)
 library(sf)
+library(LandR)
 
 ## =========================================================
 ## 2) SET PATHS
@@ -24,7 +25,7 @@ setPaths(
 )
 
 ## =========================================================
-## 3) DOWNLOAD MODULE (optional)
+## 3) DOWNLOAD MODULE
 ## =========================================================
 getModule(
   modules    = "shirinvark/EasternCanadaLandbase",
@@ -46,6 +47,11 @@ PlanningGrid_250m <- rast(
 values(PlanningGrid_250m) <- 1
 
 
+# ---- Study Area polygon (from grid extent) ----
+studyArea <- as.polygons(ext(PlanningGrid_250m)) |>
+  st_as_sf()
+
+
 # ---- Stand Age ----
 standAgeMap <- PlanningGrid_250m
 values(standAgeMap) <- sample(1:120, ncell(standAgeMap), replace = TRUE)
@@ -54,14 +60,6 @@ values(standAgeMap) <- sample(1:120, ncell(standAgeMap), replace = TRUE)
 # ---- Riparian (fractional 0–0.4 random) ----
 riparianFraction <- PlanningGrid_250m
 values(riparianFraction) <- runif(ncell(riparianFraction), 0, 0.4)
-
-
-# ---- Real SCANFI LandCover ----
-lc_path <- "E:/MODULES_TESTS/SCANFI_att_nfiLandCover_CanadaLCCclassCodes_S_2010_v1_1.tif"
-LandCover <- rast(lc_path)
-
-# IMPORTANT: do NOT reproject here
-# Let module handle alignment
 
 
 # ---- Dummy protected polygon ----
@@ -80,7 +78,6 @@ CPCAD <- st_as_sf(
   )
 )
 
-
 ## =========================================================
 ## 5) INIT + RUN SIMULATION
 ## =========================================================
@@ -89,10 +86,12 @@ sim <- simInit(
   modules = "EasternCanadaLandbase",
   objects = list(
     PlanningGrid_250m = PlanningGrid_250m,
-    LandCover         = LandCover,
+    studyArea         = studyArea,
     standAgeMap       = standAgeMap,
     riparianFraction  = riparianFraction,
     CPCAD             = CPCAD
+    # ❗ LandCover عمداً داده نشده
+    # ماژول خودش NTEMS می‌سازد
   )
 )
 
@@ -133,6 +132,6 @@ print(
 )
 
 cat("\nUnique LandCover classes after alignment:\n")
-print(head(terra::freq(sim$Landbase$landcover), 20))
+print(terra::freq(sim$LandCover)[1:10, ])
 
 cat("\n---- TEST COMPLETE ----\n")
