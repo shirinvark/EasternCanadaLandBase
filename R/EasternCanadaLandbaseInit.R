@@ -76,11 +76,18 @@ Init <- function(sim) {
   
   forestProductiveClasses <- c(210, 220, 230)
   
-  sim$forestBase <- terra::ifel(
-    landCoverAligned %in% forestProductiveClasses,
-    1,
-    0
+  rcl <- matrix(c(
+    210, 210, 1,
+    220, 220, 1,
+    230, 230, 1
+  ), ncol = 3, byrow = TRUE)
+  
+  sim$forestBase <- terra::classify(
+    landCoverAligned,
+    rcl = rcl,
+    others = 0
   )
+  
   
   
   
@@ -90,8 +97,9 @@ Init <- function(sim) {
   
   message("Building simple analysisUnitMap")
   
-  analysisUnitMap <- sim$PlanningGrid_250m
+  analysisUnitMap <- terra::rast(sim$PlanningGrid_250m)
   analysisUnitMap[] <- NA
+  
   
   analysisUnitMap[landCoverAligned == 210] <- 1
   analysisUnitMap[landCoverAligned == 220] <- 2
@@ -101,14 +109,20 @@ Init <- function(sim) {
   # 5) BASE MASK (forest + protected + age)
   # =========================================================
   
-  baseMask <- terra::ifel(
-    sim$forestBase == 1 &
-      sim$protectedMask == 0 &
-      !is.na(standAgeAligned) &
-      standAgeAligned > 0,
+  ageValid <- terra::ifel(
+    !is.na(standAgeAligned) & standAgeAligned > 0,
     1,
     0
   )
+  
+  baseMask <- terra::ifel(
+    sim$forestBase == 1 &
+      sim$protectedMask == 0 &
+      ageValid == 1,
+    1,
+    0
+  )
+  
   
   
   # =========================================================
