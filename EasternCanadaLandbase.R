@@ -170,17 +170,22 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 3) LandCover
   # =========================================================
   
+  # =========================================================
+  # 3) LandCover
+  # =========================================================
+  
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
     
-    message("Standalone mode: generating SCANFI LandCover")
+    message("Standalone mode: creating synthetic LandCover")
     
-    dPath <- file.path(sim@paths$inputPath, "LandCover")
-    if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
+    sim$LandCover <- sim$PlanningGrid_250m
     
-    sim$LandCover <- LandR::prepInputs_SCANFI_LCC_FAO(
-      rasterToMatch   = sim$PlanningGrid_250m,
-      studyArea       = sim$studyArea,
-      destinationPath = dPath
+    # create synthetic forest classes
+    sim$LandCover[] <- sample(
+      c(0, 210, 220, 230),   # 0 = non forest
+      size = terra::ncell(sim$LandCover),
+      replace = TRUE,
+      prob = c(0.3, 0.25, 0.25, 0.20)
     )
     
   } else {
