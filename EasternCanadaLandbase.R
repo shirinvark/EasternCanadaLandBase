@@ -164,21 +164,33 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    message("Creating PlanningGrid aligned to LandCover")
+    message("Creating PlanningGrid centered on valid LandCover data")
     
-    lc <- sim$LandCover
-    
-    # 30m resolution
-    baseRes <- terra::res(lc)[1]
-    
-    # تعداد سلول 30m در یک 250m
-    fact <- round(250 / baseRes)
-    
-    sim$PlanningGrid_250m <- terra::aggregate(
-      lc,
-      fact = fact,
-      fun = function(x) 1
+    # پیدا کردن یک نقطه معتبر
+    xy <- terra::spatSample(
+      sim$LandCover,
+      size = 1,
+      method = "random",
+      na.rm = TRUE,
+      as.points = TRUE
     )
+    
+    coords <- terra::geom(xy)[1, c("x", "y")]
+    
+    x0 <- coords[1]
+    y0 <- coords[2]
+    
+    sim$PlanningGrid_250m <- terra::rast(
+      nrows = 50,
+      ncols = 50,
+      xmin  = x0 - (25 * 250),
+      xmax  = x0 + (25 * 250),
+      ymin  = y0 - (25 * 250),
+      ymax  = y0 + (25 * 250),
+      crs   = terra::crs(sim$LandCover)
+    )
+    
+    sim$PlanningGrid_250m[] <- 1
   }
   
   
