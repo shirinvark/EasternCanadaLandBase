@@ -44,28 +44,24 @@ Init <- function(sim) {
   # =========================================================
   
   message("Creating protectedMask")
-  
   CPCAD_aligned <- sim$CPCAD
   
-  if (sf::st_crs(CPCAD_aligned)$wkt != terra::crs(sim$PlanningGrid_250m)) {
+  # If CRS is missing, assign it from PlanningGrid
+  if (is.na(sf::st_crs(CPCAD_aligned))) {
+    sf::st_crs(CPCAD_aligned) <- terra::crs(sim$PlanningGrid_250m)
+  }
+  
+  # Transform only if different
+  if (!identical(
+    sf::st_crs(CPCAD_aligned)$epsg,
+    sf::st_crs(terra::crs(sim$PlanningGrid_250m))$epsg
+  )) {
     CPCAD_aligned <- sf::st_transform(
       CPCAD_aligned,
       terra::crs(sim$PlanningGrid_250m)
     )
   }
   
-  
-  protTmp <- terra::rasterize(
-    CPCAD_aligned,
-    sim$PlanningGrid_250m,
-    field = 1
-  )
-  
-  sim$protectedMask <- terra::ifel(
-    is.na(protTmp),
-    0,
-    1
-  )
   
   
   # =========================================================
