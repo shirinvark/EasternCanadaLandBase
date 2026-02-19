@@ -164,22 +164,21 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    message("Creating PlanningGrid from LandCover")
+    message("Creating PlanningGrid aligned to LandCover")
     
     lc <- sim$LandCover
-    e  <- terra::ext(lc)
     
-    sim$PlanningGrid_250m <- terra::rast(
-      nrows = 50,
-      ncols = 50,
-      xmin  = e$xmin,
-      xmax  = e$xmin + (50 * 250),
-      ymin  = e$ymin,
-      ymax  = e$ymin + (50 * 250),
-      crs   = terra::crs(lc)
+    # 30m resolution
+    baseRes <- terra::res(lc)[1]
+    
+    # تعداد سلول 30m در یک 250m
+    fact <- round(250 / baseRes)
+    
+    sim$PlanningGrid_250m <- terra::aggregate(
+      lc,
+      fact = fact,
+      fun = function(x) 1
     )
-    
-    sim$PlanningGrid_250m[] <- 1
   }
   
   

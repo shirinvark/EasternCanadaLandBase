@@ -152,3 +152,4 @@ cat("\nUnique LandCover classes:\n")
 print(head(freq(sim$Landbase$landcover), 10))
 
 cat("\n---- TEST COMPLETE ----\n")
+
