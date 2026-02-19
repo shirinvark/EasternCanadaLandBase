@@ -13,7 +13,47 @@ Init <- function(sim) {
   # 1) ALIGN ALL RASTERS
   # =========================================================
   
+  # =========================================================
+  # 1) ALIGN ALL RASTERS
+  # =========================================================
+  
   message("Aligning rasters to PlanningGrid")
+  
+  # ---- StandAge ----
+  if (!terra::same.crs(sim$standAgeMap, sim$PlanningGrid_250m)) {
+    standAgeAligned <- terra::project(
+      sim$standAgeMap,
+      sim$PlanningGrid_250m,
+      method = "near"
+    )
+  } else {
+    standAgeAligned <- sim$standAgeMap
+  }
+  
+  standAgeAligned <- terra::resample(
+    standAgeAligned,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
+  
+  # ---- Riparian ----
+  if (!terra::same.crs(sim$riparianFraction, sim$PlanningGrid_250m)) {
+    riparianAligned <- terra::project(
+      sim$riparianFraction,
+      sim$PlanningGrid_250m,
+      method = "near"
+    )
+  } else {
+    riparianAligned <- sim$riparianFraction
+  }
+  
+  riparianAligned <- terra::resample(
+    riparianAligned,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
   
   # ---- LandCover ----
   if (!terra::same.crs(sim$LandCover, sim$PlanningGrid_250m)) {
@@ -26,17 +66,12 @@ Init <- function(sim) {
     landCoverAligned <- sim$LandCover
   }
   
-  # فقط crop + resample
-  landCoverAligned <- terra::crop(
-    landCoverAligned,
-    sim$PlanningGrid_250m
-  )
-  
   landCoverAligned <- terra::resample(
     landCoverAligned,
     sim$PlanningGrid_250m,
     method = "near"
   )
+  
   
   # 2) PROTECTED MASK
   # =========================================================
