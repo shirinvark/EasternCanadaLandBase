@@ -42,7 +42,6 @@ Init <- function(sim) {
   # =========================================================
   # 2) PROTECTED MASK
   # =========================================================
-  # =========================================================
   # 2) PROTECTED MASK
   # =========================================================
   
@@ -50,10 +49,12 @@ Init <- function(sim) {
   
   CPCAD_aligned <- sim$CPCAD
   
-  # اگر CPCAD خالی باشد
-  if (nrow(CPCAD_aligned) == 0) {
+  # اگر CPCAD خالی باشد یا CRS نداشته باشد
+  if (is.null(CPCAD_aligned) ||
+      nrow(CPCAD_aligned) == 0 ||
+      is.na(sf::st_crs(CPCAD_aligned))) {
     
-    message("CPCAD empty → protectedMask set to zero")
+    message("CPCAD empty or missing CRS → protectedMask = 0")
     
     sim$protectedMask <- terra::rast(sim$PlanningGrid_250m)
     sim$protectedMask[] <- 0
@@ -62,6 +63,7 @@ Init <- function(sim) {
     
     # اگر CRS متفاوت باشد
     if (sf::st_crs(CPCAD_aligned) != sf::st_crs(terra::crs(sim$PlanningGrid_250m))) {
+      
       CPCAD_aligned <- sf::st_transform(
         CPCAD_aligned,
         terra::crs(sim$PlanningGrid_250m)
@@ -81,10 +83,6 @@ Init <- function(sim) {
     )
   }
   
-  
-  # =========================================================
-  # 3) FOREST BASE (exclude wetlands)
-  # =========================================================
   
   # =========================================================
   # 3) FOREST BASE (exclude wetlands)
