@@ -47,9 +47,13 @@ Init <- function(sim) {
   
   CPCAD_aligned <- sim$CPCAD
   
-  if (!terra::same.crs(CPCAD_aligned, sim$PlanningGrid_250m)) {
-    CPCAD_aligned <- terra::project(CPCAD_aligned, sim$PlanningGrid_250m)
+  if (sf::st_crs(CPCAD_aligned)$wkt != terra::crs(sim$PlanningGrid_250m)) {
+    CPCAD_aligned <- sf::st_transform(
+      CPCAD_aligned,
+      terra::crs(sim$PlanningGrid_250m)
+    )
   }
+  
   
   protTmp <- terra::rasterize(
     CPCAD_aligned,

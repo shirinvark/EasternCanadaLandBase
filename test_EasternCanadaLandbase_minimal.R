@@ -11,7 +11,6 @@ library(SpaDES.core)
 library(SpaDES.project)
 library(terra)
 library(sf)
-library(LandR)
 
 ## =========================================================
 ## 2) SET PATHS
@@ -34,14 +33,17 @@ getModule(
 )
 
 ## =========================================================
-## 4) BUILD TEST DATA (SAFE VERSION)
+## 4) LOAD OFFICIAL NTEMS LANDCOVER
 ## =========================================================
 
-# ---- Load NTEMS once to get correct CRS + extent ----
-nt <- rast("E:/EasternCanadaLandBase/CA_forest_VLCE2_2001.tif")
-e  <- ext(nt)
+LandCover <- rast("E:/EasternCanadaLandBase/Sudbury_rstLCC_official.tif")
 
-# ---- Planning grid INSIDE NTEMS extent ----
+e <- ext(LandCover)
+
+## =========================================================
+## 5) BUILD PLANNING GRID INSIDE LANDCOVER EXTENT
+## =========================================================
+
 PlanningGrid_250m <- rast(
   nrows = 50,
   ncols = 50,
@@ -49,24 +51,36 @@ PlanningGrid_250m <- rast(
   xmax  = e$xmin + 20000 + (50 * 250),
   ymin  = e$ymin + 20000,
   ymax  = e$ymin + 20000 + (50 * 250),
-  crs   = crs(nt)
+  crs   = crs(LandCover)
 )
 
-values(PlanningGrid_250m) <- 1
+PlanningGrid_250m[] <- 1
 
-# ---- Study Area polygon (from grid extent) ----
+## =========================================================
+## 6) STUDY AREA
+## =========================================================
+
 studyArea <- as.polygons(ext(PlanningGrid_250m)) |>
   st_as_sf()
 
-# ---- Stand Age ----
-standAgeMap <- PlanningGrid_250m
-values(standAgeMap) <- sample(1:120, ncell(standAgeMap), replace = TRUE)
+## =========================================================
+## 7) STAND AGE
+## =========================================================
 
-# ---- Riparian (fractional 0–0.4 random) ----
-riparianFraction <- PlanningGrid_250m
-values(riparianFraction) <- runif(ncell(riparianFraction), 0, 0.4)
+standAgeMap <- rast(PlanningGrid_250m)
+standAgeMap[] <- sample(1:120, ncell(standAgeMap), replace = TRUE)
 
-# ---- Dummy protected polygon ----
+## =========================================================
+## 8) RIPARIAN
+## =========================================================
+
+riparianFraction <- rast(PlanningGrid_250m)
+riparianFraction[] <- runif(ncell(riparianFraction), 0, 0.4)
+
+## =========================================================
+## 9) DUMMY PROTECTED AREA
+## =========================================================
+
 CPCAD <- st_as_sf(
   st_sfc(
     st_polygon(list(
@@ -83,26 +97,26 @@ CPCAD <- st_as_sf(
 )
 
 ## =========================================================
-## 5) INIT + RUN SIMULATION
+## 10) INIT + RUN SIMULATION
 ## =========================================================
+
 sim <- simInit(
   times   = list(start = 1, end = 1),
   modules = "EasternCanadaLandbase",
   objects = list(
     PlanningGrid_250m = PlanningGrid_250m,
+    LandCover         = LandCover,
     studyArea         = studyArea,
     standAgeMap       = standAgeMap,
     riparianFraction  = riparianFraction,
     CPCAD             = CPCAD
-    # LandCover عمداً داده نمی‌شود
-    # ماژول خودش NTEMS می‌سازد
   )
 )
 
 sim <- spades(sim)
 
 ## =========================================================
-## 6) OUTPUT CHECKS
+## 11) OUTPUT CHECKS
 ## =========================================================
 
 cat("\n---- LOGICAL CHECKS ----\n")
@@ -134,7 +148,7 @@ print(
   )
 )
 
-cat("\nUnique LandCover classes after alignment:\n")
-print(head(freq(sim$LandCover), 10))
+cat("\nUnique LandCover classes:\n")
+print(head(freq(sim$Landbase$landcover), 10))
 
 cat("\n---- TEST COMPLETE ----\n")
