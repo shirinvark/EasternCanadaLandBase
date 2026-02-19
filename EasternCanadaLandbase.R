@@ -131,72 +131,74 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) PlanningGrid
   # =========================================================
   
-  # =========================================================
-  # 1) PlanningGrid
-  # =========================================================
-  
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    message("Standalone mode: creating PlanningGrid inside NTEMS extent")
+    message("Standalone mode: creating synthetic PlanningGrid")
     
-    # Read NTEMS once to get real extent + CRS
-    nt_path <- file.path(sim@paths$inputPath, "CA_forest_VLCE2_2001.tif")
-    nt <- terra::rast(nt_path)
-    
-    e <- terra::ext(nt)
-    
-    # Create small grid safely inside NTEMS
     sim$PlanningGrid_250m <- terra::rast(
-      nrows = 50,
-      ncols = 50,
-      xmin  = e$xmin + 20000,
-      xmax  = e$xmin + 20000 + (50 * 250),
-      ymin  = e$ymin + 20000,
-      ymax  = e$ymin + 20000 + (50 * 250),
-      crs   = terra::crs(nt)
+      nrows = 50, ncols = 50,
+      xmin = 0, xmax = 12500,
+      ymin = 0, ymax = 12500,
+      res  = 250,
+      crs = "EPSG:5070"
     )
     
-    terra::values(sim$PlanningGrid_250m) <- 1
+    sim$PlanningGrid_250m[] <- 1
   }
   
-  # =========================================================
-  # 2) StudyArea
-  # =========================================================
-  
-  if (!SpaDES.core::suppliedElsewhere("studyArea")) {
-    
-    message("Standalone mode: creating studyArea")
-    
-    sim$studyArea <- terra::as.polygons(
-      terra::ext(sim$PlanningGrid_250m),
-      crs = terra::crs(sim$PlanningGrid_250m)
-    )
-  }
   
   # =========================================================
-  # 3) LandCover (NTEMS)
+  # 2) LandCover (NTEMS-like fallback)
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
     
-    message("Standalone mode: building NTEMS LandCover")
+    message("Standalone mode: creating synthetic NTEMS-like LandCover")
     
-    message("Standalone mode: reading NTEMS directly")
+    sim$LandCover <- terra::rast(sim$PlanningGrid_250m)
     
-    nt_path <- file.path(sim@paths$inputPath, "CA_forest_VLCE2_2001.tif")
-    
-    nt <- terra::rast(nt_path)
-    
-    # align to planning grid
-    nt <- terra::project(nt, sim$PlanningGrid_250m, method = "near")
-    nt <- terra::resample(nt, sim$PlanningGrid_250m, method = "near")
-    
-    sim$LandCover <- nt
+    sim$LandCover[] <- as.integer(sample(
+      c(81, 210, 220, 230),
+      terra::ncell(sim$LandCover),
+      replace = TRUE
+    ))
     
   }
   
+  
   # =========================================================
-  # 4) CPCAD
+  # 3) StandAge
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
+    
+    message("Standalone mode: creating synthetic standAgeMap")
+    
+    sim$standAgeMap <- terra::rast(sim$PlanningGrid_250m)
+    
+    sim$standAgeMap[] <- sample(
+      20:120,
+      size = terra::ncell(sim$standAgeMap),
+      replace = TRUE
+    )
+  }
+  
+  
+  # =========================================================
+  # 4) Riparian
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("riparianFraction")) {
+    
+    message("Standalone mode: creating zero riparianFraction")
+    
+    sim$riparianFraction <- terra::rast(sim$PlanningGrid_250m)
+    sim$riparianFraction[] <- 0
+  }
+  
+  
+  # =========================================================
+  # 5) CPCAD
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
@@ -205,34 +207,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     sim$CPCAD <- sf::st_sf(
       geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
-    )
-  }
-  
-  # =========================================================
-  # 5) Riparian
-  # =========================================================
-  
-  if (!SpaDES.core::suppliedElsewhere("riparianFraction")) {
-    
-    message("Standalone mode: creating zero riparian raster")
-    
-    sim$riparianFraction <- terra::rast(sim$PlanningGrid_250m)
-    sim$riparianFraction[] <- 0
-  }
-  
-  # =========================================================
-  # 6) StandAge
-  # =========================================================
-  
-  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
-    
-    message("Standalone mode: generating standAgeMap")
-    
-    sim$standAgeMap <- terra::rast(sim$PlanningGrid_250m)
-    sim$standAgeMap[] <- sample(
-      20:120,
-      size = terra::ncell(sim$standAgeMap),
-      replace = TRUE
     )
   }
   
