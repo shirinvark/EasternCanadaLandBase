@@ -1,6 +1,6 @@
 ## Everything in this file and any files in the R directory are sourced during simInit()
 ## All functions and objects are put into the simList.
-## Functions are called directly by name (new SpaDES convention).
+## Functions are called directly by name (new SpaDES convention)
 
 defineModule(sim, list(
   name = "EasternCanadaLandbase",
