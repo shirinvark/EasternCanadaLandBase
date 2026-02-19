@@ -119,23 +119,17 @@ Init <- function(sim) {
   # 3) FOREST BASE (exclude wetlands)
   # =========================================================
   
+  # =========================================================
+  # 3) FOREST BASE (exclude wetlands)
+  # =========================================================
+  
   message("Creating base forest mask")
   
-  forestProductiveClasses <- c(210, 220, 230)
-  
-  rcl <- matrix(c(
-    210, 210, 1,
-    220, 220, 1,
-    230, 230, 1
-  ), ncol = 3, byrow = TRUE)
-  
-  sim$forestBase <- terra::classify(
-    landCoverAligned,
-    rcl = rcl,
-    others = 0
+  sim$forestBase <- terra::ifel(
+    landCoverAligned %in% c(210, 220, 230),
+    1,
+    0
   )
-  
-  
   
   
   # =========================================================

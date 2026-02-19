@@ -33,28 +33,41 @@ getModule(
 )
 
 ## =========================================================
-## 4) LOAD OFFICIAL NTEMS LANDCOVER
+## 4) LOAD OFFICIAL LANDCOVER
 ## =========================================================
 
 LandCover <- rast("E:/EasternCanadaLandBase/Sudbury_rstLCC_official.tif")
 
-e <- ext(LandCover)
+cat("\nLandCover loaded.\n")
+print(LandCover)
 
 ## =========================================================
-## 5) BUILD PLANNING GRID INSIDE LANDCOVER EXTENT
+## 5) BUILD PLANNING GRID ON VALID PIXEL
 ## =========================================================
+
+valid_pt <- spatSample(
+  LandCover,
+  size = 1,
+  method = "random",
+  na.rm = TRUE,
+  as.points = TRUE
+)
+
+xy <- crds(valid_pt)
 
 PlanningGrid_250m <- rast(
   nrows = 50,
   ncols = 50,
-  xmin  = e$xmin + 20000,
-  xmax  = e$xmin + 20000 + (50 * 250),
-  ymin  = e$ymin + 20000,
-  ymax  = e$ymin + 20000 + (50 * 250),
+  xmin  = xy[1] - 25*250,
+  xmax  = xy[1] + 25*250,
+  ymin  = xy[2] - 25*250,
+  ymax  = xy[2] + 25*250,
   crs   = crs(LandCover)
 )
 
 PlanningGrid_250m[] <- 1
+
+cat("\nPlanningGrid created on valid landcover area.\n")
 
 ## =========================================================
 ## 6) STUDY AREA
@@ -121,13 +134,13 @@ sim <- spades(sim)
 
 cat("\n---- LOGICAL CHECKS ----\n")
 
-cat("Forest base cells:\n")
+cat("\nForest base cells:\n")
 print(global(sim$forestBase, "sum", na.rm = TRUE))
 
-cat("Protected cells:\n")
+cat("\nProtected cells:\n")
 print(global(sim$protectedMask, "sum", na.rm = TRUE))
 
-cat("Merchantable total (fractional sum):\n")
+cat("\nMerchantable total (fractional sum):\n")
 print(global(sim$merchantableForest, "sum", na.rm = TRUE))
 
 cat("\nCheck: No protected cell should be merchantable\n")
@@ -148,8 +161,8 @@ print(
   )
 )
 
-cat("\nUnique LandCover classes:\n")
-print(head(freq(sim$Landbase$landcover), 10))
+cat("\nUnique LandCover classes inside planning grid:\n")
+print(freq(sim$Landbase$landcover))
 
 cat("\n---- TEST COMPLETE ----\n")
 
