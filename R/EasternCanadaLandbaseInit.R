@@ -126,10 +126,13 @@ Init <- function(sim) {
   message("Creating base forest mask")
   
   sim$forestBase <- terra::ifel(
-    landCoverAligned %in% c(210, 220, 230),
+    landCoverAligned == 210 |
+      landCoverAligned == 220 |
+      landCoverAligned == 230,
     1,
     0
   )
+  
   
   
   # =========================================================
