@@ -128,32 +128,25 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 .inputObjects <- function(sim) {
   
   # =========================================================
-  # 1) PlanningGrid
-  # =========================================================
-  
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
-    
-    message("Standalone mode: creating synthetic PlanningGrid")
-    
-    sim$PlanningGrid_250m <- terra::rast(
-      nrows = 50, ncols = 50,
-      xmin = 0, xmax = 12500,
-      ymin = 0, ymax = 12500,
-      res  = 250,
-      crs = "EPSG:5070"
-    )
-    
-    sim$PlanningGrid_250m[] <- 1
-  }
-  
-  
-  # =========================================================
-  # 2) LandCover (NTEMS-like fallback)
+  # 1) LandCover (اول باید مشخص شود)
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("LandCover")) {
     
     message("Standalone mode: creating synthetic NTEMS-like LandCover")
+    
+    # اگر PlanningGrid هنوز نیست، موقتاً یکی بسازیم
+    if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
+      
+      sim$PlanningGrid_250m <- terra::rast(
+        nrows = 50, ncols = 50,
+        xmin = 0, xmax = 12500,
+        ymin = 0, ymax = 12500,
+        res  = 250,
+        crs  = "EPSG:5070"
+      )
+      sim$PlanningGrid_250m[] <- 1
+    }
     
     sim$LandCover <- terra::rast(sim$PlanningGrid_250m)
     
@@ -162,7 +155,31 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
       terra::ncell(sim$LandCover),
       replace = TRUE
     ))
+  }
+  
+  
+  # =========================================================
+  # 2) PlanningGrid (اگر هنوز وجود ندارد)
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
+    message("Creating PlanningGrid from LandCover")
+    
+    lc <- sim$LandCover
+    e  <- terra::ext(lc)
+    
+    sim$PlanningGrid_250m <- terra::rast(
+      nrows = 50,
+      ncols = 50,
+      xmin  = e$xmin,
+      xmax  = e$xmin + (50 * 250),
+      ymin  = e$ymin,
+      ymax  = e$ymin + (50 * 250),
+      crs   = terra::crs(lc)
+    )
+    
+    sim$PlanningGrid_250m[] <- 1
   }
   
   
@@ -178,7 +195,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     sim$standAgeMap[] <- sample(
       20:120,
-      size = terra::ncell(sim$standAgeMap),
+      terra::ncell(sim$standAgeMap),
       replace = TRUE
     )
   }
@@ -212,7 +229,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   return(invisible(sim))
 }
-
 
 ## Summary:
 ## EasternCanadaLandbase builds the effective harvestable
