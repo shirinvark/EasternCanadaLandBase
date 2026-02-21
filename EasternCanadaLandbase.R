@@ -17,12 +17,14 @@ defineModule(sim, list(
   
   childModules = character(0),
   version = list(EasternCanadaLandbase = "0.0.0.9000"),
+  spatialExtent = NA,
+  loadOrder = 1,
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("NEWS.md", "README.md", "EasternCanadaLandbase.Rmd"),
   reqdPkgs = list("terra", "sf", "LandR"),
-  
+  parameters = list(),
   inputObjects = data.table::rbindlist(list(
     expectsInput("PlanningGrid_250m", "SpatRaster",
                  "Planning grid from EasternCanadaDataPrep"),
