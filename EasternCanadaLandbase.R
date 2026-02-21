@@ -18,7 +18,7 @@ defineModule(sim, list(
   childModules = character(0),
   version = list(EasternCanadaLandbase = "0.0.0.9000"),
   spatialExtent = NA,
-  loadOrder = 1,
+  loadOrder = list("EasternCanadaDataPrep", "RiparianBuffers"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
