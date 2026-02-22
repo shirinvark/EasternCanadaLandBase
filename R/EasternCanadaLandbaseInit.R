@@ -73,10 +73,10 @@ Init <- function(sim) {
   )
   
   
-  # 2) PROTECTED MASK
+  # 2) protectedAreaMask
   # =========================================================
   
-  message("Creating protectedMask")
+  message("Creating protectedAreaMask")
   
   CPCAD_aligned <- sim$CPCAD
   
@@ -85,10 +85,10 @@ Init <- function(sim) {
       nrow(CPCAD_aligned) == 0 ||
       is.na(sf::st_crs(CPCAD_aligned))) {
     
-    message("CPCAD empty or missing CRS → protectedMask = 0")
+    message("CPCAD empty or missing CRS → protectedAreaMask = 0")
     
-    sim$protectedMask <- terra::rast(sim$PlanningGrid_250m)
-    sim$protectedMask[] <- 0
+    sim$protectedAreaMask <- terra::rast(sim$PlanningGrid_250m)
+    sim$protectedAreaMask[] <- 0
     
   } else {
     
@@ -107,7 +107,7 @@ Init <- function(sim) {
       field = 1
     )
     
-    sim$protectedMask <- terra::ifel(
+    sim$protectedAreaMask <- terra::ifel(
       is.na(protTmp),
       0,
       1
@@ -116,16 +116,13 @@ Init <- function(sim) {
   
   
   # ========================================================
-  # 3) FOREST BASE (exclude wetlands)
+  # 3) forest Mask (exclude wetlands)
   # =========================================================
   
-  # =========================================================
-  # 3) FOREST BASE (exclude wetlands)
-  # =========================================================
   
   message("Creating base forest mask")
   
-  sim$forestBase <- terra::ifel(
+  sim$forestMask <- terra::ifel(
     landCoverAligned == 210 |
       landCoverAligned == 220 |
       landCoverAligned == 230,
@@ -160,8 +157,8 @@ Init <- function(sim) {
   )
   
   baseMask <- terra::ifel(
-    sim$forestBase == 1 &
-      sim$protectedMask == 0 &
+    sim$forestMask == 1 &
+      sim$protectedAreaMask == 0 &
       ageValid == 1,
     1,
     0
@@ -176,16 +173,15 @@ Init <- function(sim) {
   
   message("Applying riparian reduction")
   
-  sim$merchantableForest <- baseMask * (1 - riparianAligned)
+  sim$harvestableFraction <- baseMask * (1 - riparianAligned)
   
   # =========================================================
   # 7) MASK ANALYSIS UNIT
   # =========================================================
   
-  message("Masking analysis units by merchantable forest")
-  
+  message("Masking analysis units by harvestableFraction")  
   analysisUnitMasked <- terra::ifel(
-    sim$merchantableForest > 0,
+    sim$harvestableFraction > 0,
     analysisUnitMap,
     NA
   )
@@ -200,9 +196,9 @@ Init <- function(sim) {
     landcover           = landCoverAligned,
     standAgeMap         = standAgeAligned,
     analysisUnitMap     = sim$analysisUnitMap,
-    forestBase          = sim$forestBase,
-    protectedMask       = sim$protectedMask,
-    merchantableForest  = sim$merchantableForest
+    forestMask          = sim$forestMask,
+    protectedAreaMask   = sim$protectedAreaMask,
+    harvestableFraction  = sim$harvestableFraction
   )
   
   invisible(sim)

@@ -41,17 +41,17 @@ defineModule(sim, list(
   
   outputObjects = data.table::rbindlist(list(
     
-    createsOutput("protectedMask", "SpatRaster",
+    createsOutput("protectedAreaMask", "SpatRaster",
                   "Binary protected areas mask"),
     
-    createsOutput("forestBase", "SpatRaster",
+    createsOutput("forestMask", "SpatRaster",
                   "Binary forest mask excluding wetlands"),
     
-    createsOutput("merchantableForest", "SpatRaster",
+    createsOutput("harvestableFraction", "SpatRaster",
                   "Effective forest area after protected and riparian reduction"),
     
     createsOutput("analysisUnitMap", "SpatRaster",
-                  "Masked analysis unit raster"),
+                  "Temporary development analysis unit raster (to be modularized later"),
     
     createsOutput("Landbase", "list",
                   "Derived landbase container")
