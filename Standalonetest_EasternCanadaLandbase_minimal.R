@@ -168,3 +168,4 @@ cat("\nTotal Harvestable Area (ha):\n")
 print(sim$Landbase$metrics$totalHarvestableArea_ha)
 
 cat("\n---- TEST COMPLETE ----\n")
+
