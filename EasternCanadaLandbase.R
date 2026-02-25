@@ -26,16 +26,22 @@ defineModule(sim, list(
   reqdPkgs = list("terra", "sf", "LandR"),
   parameters = list(),
   inputObjects = data.table::rbindlist(list(
+    
     expectsInput("PlanningGrid_250m", "SpatRaster",
                  "Planning grid from EasternCanadaDataPrep"),
-    expectsInput("LandCover", "SpatRaster",
-                 "land cover raster"),
-    expectsInput("standAgeMap", "SpatRaster",
-                 "Stand age raster from upstream module"),
-    expectsInput("riparianFraction", "SpatRaster",
-                 "Fractional riparian influence raster"),
+    
+    expectsInput("LandCover_250m", "SpatRaster",
+                 "Land cover raster aligned to PlanningGrid_250m"),
+    
+    expectsInput("standAge_250m", "SpatRaster",
+                 "Stand age raster aligned to PlanningGrid_250m"),
+    
+    expectsInput("Riparian", "list",
+                 "Riparian module output list"),
+    
     expectsInput("CPCAD", "sf",
                  "Protected areas")
+    
   ), fill = TRUE)
   ,
   
@@ -44,8 +50,8 @@ defineModule(sim, list(
     createsOutput("protectedAreaMask", "SpatRaster",
                   "Binary protected areas mask"),
     
-    createsOutput("forestMask", "SpatRaster",
-                  "Binary forest mask excluding wetlands"),
+    createsOutput("forestCoverMask", "SpatRaster",
+                  "Binary forestCoverMask excluding wetlands"),
     
     createsOutput("harvestableFraction", "SpatRaster",
                   "Effective forest area after protected and riparian reduction"),
@@ -78,54 +84,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 
 
 # =========================================================
-# Init event (NEW NAMING CONVENTION – IMPORTANT)
-# =========================================================
-# =========================================================
-# 
-# =========================================================
-#.inputObjects <- function(sim) {
-  
-  # ---- Stand Age ----
- # if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
-    
-  #  message("Creating standAgeMap")
-    
-   # dPath <- file.path(sim@paths$inputPath, "StandAge")
-    #if (!dir.exists(dPath)) dir.create(dPath, recursive = TRUE)
-    
-    #sim$standAgeMap <- LandR::prepInputsStandAgeMap(
-     # rasterToMatch   = sim$PlanningGrid_250m,
-      #studyArea       = sim$studyArea,
-      #destinationPath = dPath,
-      #dataYear        = 2011
-    #)
-  #}
-  
-  # ---- Analysis Unit ----
-  #if (!SpaDES.core::suppliedElsewhere("analysisUnitMap")) {
-    
-   # message("Creating temporary analysisUnitMap")
-    
-    #analysisUnitMap <- sim$LandCover
-    #analysisUnitMap[] <- 0
-    
-    #analysisUnitMap[sim$LandCover == 210] <- 1
-    #analysisUnitMap[sim$LandCover == 220] <- 2
-    #analysisUnitMap[sim$LandCover == 230] <- 3
-    #analysisUnitMap[sim$LandCover == 240] <- 4
-    
-    #sim$analysisUnitMap <- analysisUnitMap
-  #}
-  
-  
-#  return(invisible(sim))
-#.inputObjects <- function(sim) {
 
-# =========================================================
-# Planning Grid
-# =========================================================
-# =========================================================
-# .inputObjects
 # =========================================================
 .inputObjects <- function(sim) {
   
@@ -133,8 +92,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) LandCover (اول باید مشخص شود)
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("LandCover")) {
-    
+  if (!SpaDES.core::suppliedElsewhere("LandCover_250m")) {    
     message("Standalone mode: creating synthetic NTEMS-like LandCover")
     
     # اگر PlanningGrid هنوز نیست، موقتاً یکی بسازیم
@@ -150,11 +108,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
       sim$PlanningGrid_250m[] <- 1
     }
     
-    sim$LandCover <- terra::rast(sim$PlanningGrid_250m)
+    sim$LandCover_250m <- terra::rast(sim$PlanningGrid_250m)
     
-    sim$LandCover[] <- as.integer(sample(
+    sim$LandCover_250m[] <- as.integer(sample(
       c(81, 210, 220, 230),
-      terra::ncell(sim$LandCover),
+      terra::ncell(sim$LandCover_250m),
       replace = TRUE
     ))
   }
@@ -170,7 +128,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     # پیدا کردن یک نقطه معتبر
     xy <- terra::spatSample(
-      sim$LandCover,
+      sim$LandCover_250m,
       size = 1,
       method = "random",
       na.rm = TRUE,
@@ -189,8 +147,8 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
       xmax  = x0 + (25 * 250),
       ymin  = y0 - (25 * 250),
       ymax  = y0 + (25 * 250),
-      crs   = terra::crs(sim$LandCover)
-    )
+      crs   = terra::crs(sim$LandCover_250m)
+      )
     
     sim$PlanningGrid_250m[] <- 1
   }
@@ -200,15 +158,15 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 3) StandAge
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("standAgeMap")) {
+  if (!SpaDES.core::suppliedElsewhere("standAge_250m")) {
     
-    message("Standalone mode: creating synthetic standAgeMap")
+    message("Standalone mode: creating synthetic standAge_250m")
     
-    sim$standAgeMap <- terra::rast(sim$PlanningGrid_250m)
+    sim$standAge_250m <- terra::rast(sim$PlanningGrid_250m)
     
-    sim$standAgeMap[] <- sample(
+    sim$standAge_250m[] <- sample(
       20:120,
-      terra::ncell(sim$standAgeMap),
+      terra::ncell(sim$standAge_250m),
       replace = TRUE
     )
   }
@@ -218,12 +176,16 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 4) Riparian
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("riparianFraction")) {
+  if (!SpaDES.core::suppliedElsewhere("Riparian")) {
     
-    message("Standalone mode: creating zero riparianFraction")
+    message("Standalone mode: creating zero Riparian list")
     
-    sim$riparianFraction <- terra::rast(sim$PlanningGrid_250m)
-    sim$riparianFraction[] <- 0
+    ripTmp <- terra::rast(sim$PlanningGrid_250m)
+    ripTmp[] <- 0
+    
+    sim$Riparian <- list(
+      riparianFraction = ripTmp
+    )
   }
   
   
