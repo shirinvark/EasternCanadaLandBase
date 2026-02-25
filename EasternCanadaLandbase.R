@@ -49,6 +49,8 @@ defineModule(sim, list(
     
     createsOutput("protectedAreaMask", "SpatRaster",
                   "Binary protected areas mask"),
+    createsOutput("isHarvestEligible", "SpatRaster",
+                  "Binary harvest eligibility mask"),
     
     createsOutput("forestCoverMask", "SpatRaster",
                   "Binary forestCoverMask excluding wetlands"),
@@ -89,24 +91,31 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 .inputObjects <- function(sim) {
   
   # =========================================================
-  # 1) LandCover (اول باید مشخص شود)
+  # 1) PlanningGrid (اول باید ساخته شود)
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("LandCover_250m")) {    
-    message("Standalone mode: creating synthetic NTEMS-like LandCover")
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
     
-    # اگر PlanningGrid هنوز نیست، موقتاً یکی بسازیم
-    if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
-      
-      sim$PlanningGrid_250m <- terra::rast(
-        nrows = 50, ncols = 50,
-        xmin = 0, xmax = 12500,
-        ymin = 0, ymax = 12500,
-        res  = 250,
-        crs  = "EPSG:5070"
-      )
-      sim$PlanningGrid_250m[] <- 1
-    }
+    message("Standalone mode: creating synthetic PlanningGrid")
+    
+    sim$PlanningGrid_250m <- terra::rast(
+      nrows = 50, ncols = 50,
+      xmin = 0, xmax = 12500,
+      ymin = 0, ymax = 12500,
+      res  = 250,
+      crs  = "EPSG:5070"
+    )
+    
+    sim$PlanningGrid_250m[] <- 1
+  }
+  
+  # =========================================================
+  # 2) LandCover
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("LandCover_250m")) {
+    
+    message("Standalone mode: creating synthetic NTEMS-like LandCover")
     
     sim$LandCover_250m <- terra::rast(sim$PlanningGrid_250m)
     
@@ -117,50 +126,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     ))
   }
   
-  
-  # =========================================================
-  # 2) PlanningGrid (اگر هنوز وجود ندارد)
-  # =========================================================
-  
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
-    
-    message("Creating PlanningGrid centered on valid LandCover data")
-    
-    # پیدا کردن یک نقطه معتبر
-    xy <- terra::spatSample(
-      sim$LandCover_250m,
-      size = 1,
-      method = "random",
-      na.rm = TRUE,
-      as.points = TRUE
-    )
-    
-    coords <- terra::geom(xy)[1, c("x", "y")]
-    
-    x0 <- coords[1]
-    y0 <- coords[2]
-    
-    sim$PlanningGrid_250m <- terra::rast(
-      nrows = 50,
-      ncols = 50,
-      xmin  = x0 - (25 * 250),
-      xmax  = x0 + (25 * 250),
-      ymin  = y0 - (25 * 250),
-      ymax  = y0 + (25 * 250),
-      crs   = terra::crs(sim$LandCover_250m)
-      )
-    
-    sim$PlanningGrid_250m[] <- 1
-  }
-  
-  
   # =========================================================
   # 3) StandAge
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("standAge_250m")) {
-    
-    message("Standalone mode: creating synthetic standAge_250m")
     
     sim$standAge_250m <- terra::rast(sim$PlanningGrid_250m)
     
@@ -171,14 +141,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
   }
   
-  
   # =========================================================
   # 4) Riparian
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("Riparian")) {
-    
-    message("Standalone mode: creating zero Riparian list")
     
     ripTmp <- terra::rast(sim$PlanningGrid_250m)
     ripTmp[] <- 0
@@ -188,14 +155,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
   }
   
-  
   # =========================================================
   # 5) CPCAD
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
-    
-    message("Standalone mode: creating empty CPCAD")
     
     sim$CPCAD <- sf::st_sf(
       geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))

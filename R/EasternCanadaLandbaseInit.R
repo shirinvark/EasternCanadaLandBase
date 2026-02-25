@@ -19,7 +19,7 @@ Init <- function(sim) {
   # اگر CPCAD خالی باشد یا CRS نداشته باشد
   if (is.null(CPCAD_aligned) ||
       nrow(CPCAD_aligned) == 0 ||
-      is.na(sf::st_crs(CPCAD_aligned))) {
+      is.null(sf::st_crs(CPCAD_aligned))) {
     
     message("CPCAD empty or missing CRS → protectedAreaMask = 0")
     
@@ -56,11 +56,13 @@ Init <- function(sim) {
   
   forestClasses <- c(210, 220, 230)
   
-  sim$forestCoverMask <- landCoverAligned
-  forestLogical <- sim$forestCoverMask %in% forestClasses
-  
-  sim$forestCoverMask[!forestLogical] <- 0
-  sim$forestCoverMask[forestLogical]  <- 1
+  sim$forestCoverMask <- terra::ifel(
+    landCoverAligned == 210 |
+      landCoverAligned == 220 |
+      landCoverAligned == 230,
+    1,
+    0
+  )
   # =========================================================
   # 4) BUILD SIMPLE ANALYSIS UNIT (DEV MODE)
   # =========================================================
