@@ -29,12 +29,12 @@ Init <- function(sim) {
   } else {
     
     # اگر CRS متفاوت باشد
-    if (!terra::same.crs(terra::vect(CPCAD_aligned),
-                         sim$PlanningGrid_250m)) {
+    if (sf::st_crs(CPCAD_aligned)$epsg != 
+        sf::st_crs(sim$PlanningGrid_250m)$epsg) {
       
       CPCAD_aligned <- sf::st_transform(
         CPCAD_aligned,
-        terra::crs(sim$PlanningGrid_250m)
+        crs(sim$PlanningGrid_250m)
       )
     }
      
