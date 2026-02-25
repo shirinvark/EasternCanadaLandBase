@@ -29,14 +29,10 @@ Init <- function(sim) {
   } else {
     
     # اگر CRS متفاوت باشد
-    if (sf::st_crs(CPCAD_aligned)$epsg != 
-        sf::st_crs(sim$PlanningGrid_250m)$epsg) {
-      
-      CPCAD_aligned <- sf::st_transform(
-        CPCAD_aligned,
-        crs(sim$PlanningGrid_250m)
-      )
-    }
+    CPCAD_aligned <- sf::st_transform(
+      CPCAD_aligned,
+      terra::crs(sim$PlanningGrid_250m)
+    )
      
     
     protTmp <- terra::rasterize(
