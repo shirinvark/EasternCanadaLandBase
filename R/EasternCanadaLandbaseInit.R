@@ -35,10 +35,13 @@ Init <- function(sim) {
     )
      
     
+    CPCAD_vect <- terra::vect(CPCAD_aligned)
+    
     protTmp <- terra::rasterize(
-      CPCAD_aligned,
+      CPCAD_vect,
       sim$PlanningGrid_250m,
-      field = 1
+      field = 1,
+      background = 0
     )
     
     sim$protectedAreaMask <- protTmp
