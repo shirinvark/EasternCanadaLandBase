@@ -135,21 +135,43 @@ Init <- function(sim) {
   resXY <- terra::res(sim$PlanningGrid_250m)
   cellArea_ha <- (resXY[1] * resXY[2]) / 10000
   
-  # Eligible area per AU
-  eligibleArea_by_AU <- terra::zonal(
-    isHarvestEligible,
-    sim$analysisUnitMap,
-    fun = "sum",
-    na.rm = TRUE
-  )
+  # --------------------------------------------------
+  # Eligible area
+  # --------------------------------------------------
   
-  # Harvestable area per AU (fractional)
-  harvestableArea_by_AU <- terra::zonal(
-    sim$harvestableFraction,
-    sim$analysisUnitMap,
-    fun = "sum",
-    na.rm = TRUE
-  )
+  if (is.null(eligibleArea_by_AU) ||
+      nrow(eligibleArea_by_AU) == 0 ||
+      !"sum" %in% names(eligibleArea_by_AU)) {
+    
+    eligibleArea_by_AU <- data.frame(
+      analysisUnit   = numeric(0),
+      eligibleArea_ha = numeric(0)
+    )
+    
+  } else {
+    
+    eligibleArea_by_AU$sum <- eligibleArea_by_AU$sum * cellArea_ha
+    colnames(eligibleArea_by_AU) <- c("analysisUnit", "eligibleArea_ha")
+  }
+  
+  # --------------------------------------------------
+  # Harvestable area
+  # --------------------------------------------------
+  
+  if (is.null(harvestableArea_by_AU) ||
+      nrow(harvestableArea_by_AU) == 0 ||
+      !"sum" %in% names(harvestableArea_by_AU)) {
+    
+    harvestableArea_by_AU <- data.frame(
+      analysisUnit      = numeric(0),
+      harvestableArea_ha = numeric(0)
+    )
+    
+  } else {
+    
+    harvestableArea_by_AU$sum <- harvestableArea_by_AU$sum * cellArea_ha
+    colnames(harvestableArea_by_AU) <- c("analysisUnit", "harvestableArea_ha")
+  }
   
   # Convert to hectares
   if (is.null(eligibleArea_by_AU) || nrow(eligibleArea_by_AU) == 0) {
