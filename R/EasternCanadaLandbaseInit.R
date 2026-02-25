@@ -54,8 +54,7 @@ Init <- function(sim) {
   # 3) forestCoverMask
   # ========================================================
   
-  forestClasses <- c(210, 220, 230)
-  
+
   sim$forestCoverMask <- terra::ifel(
     landCoverAligned == 210 |
       landCoverAligned == 220 |
@@ -128,6 +127,8 @@ Init <- function(sim) {
     NA
   )
   sim$analysisUnitMap <- analysisUnitMasked
+ 
+  
   # =========================================================
   # AREA PER ANALYSIS UNIT (AAC-ready)
   # =========================================================
@@ -135,16 +136,34 @@ Init <- function(sim) {
   resXY <- terra::res(sim$PlanningGrid_250m)
   cellArea_ha <- (resXY[1] * resXY[2]) / 10000
   
-  # --------------------------------------------------
+  # ---------------------------
+  # ZONAL CALCULATIONS
+  # ---------------------------
+  
+  eligibleArea_by_AU <- terra::zonal(
+    isHarvestEligible,
+    sim$analysisUnitMap,
+    fun = "sum",
+    na.rm = TRUE
+  )
+  
+  harvestableArea_by_AU <- terra::zonal(
+    sim$harvestableFraction,
+    sim$analysisUnitMap,
+    fun = "sum",
+    na.rm = TRUE
+  )
+  
+  # ---------------------------
   # Eligible area
-  # --------------------------------------------------
+  # ---------------------------
   
   if (is.null(eligibleArea_by_AU) ||
       nrow(eligibleArea_by_AU) == 0 ||
       !"sum" %in% names(eligibleArea_by_AU)) {
     
     eligibleArea_by_AU <- data.frame(
-      analysisUnit   = numeric(0),
+      analysisUnit = numeric(0),
       eligibleArea_ha = numeric(0)
     )
     
@@ -154,42 +173,15 @@ Init <- function(sim) {
     colnames(eligibleArea_by_AU) <- c("analysisUnit", "eligibleArea_ha")
   }
   
-  # --------------------------------------------------
+  # ---------------------------
   # Harvestable area
-  # --------------------------------------------------
+  # ---------------------------
   
   if (is.null(harvestableArea_by_AU) ||
       nrow(harvestableArea_by_AU) == 0 ||
       !"sum" %in% names(harvestableArea_by_AU)) {
     
     harvestableArea_by_AU <- data.frame(
-      analysisUnit      = numeric(0),
-      harvestableArea_ha = numeric(0)
-    )
-    
-  } else {
-    
-    harvestableArea_by_AU$sum <- harvestableArea_by_AU$sum * cellArea_ha
-    colnames(harvestableArea_by_AU) <- c("analysisUnit", "harvestableArea_ha")
-  }
-  
-  # Convert to hectares
-  if (is.null(eligibleArea_by_AU) || nrow(eligibleArea_by_AU) == 0) {
-    
-    eligibleArea_by_AU <- data.frame(
-      analysisUnit = numeric(0),
-      eligibleArea_ha = numeric(0)
-    )
-    
-  } else {
-    
-    eligibleArea_by_AU$sum <- eligibleArea_by_AU$sum * cellArea_ha
-    colnames(eligibleArea_by_AU) <- c("analysisUnit", "eligibleArea_ha")
-  }
-  
-  if (is.null(harvestableArea_by_AU) || nrow(harvestableArea_by_AU) == 0) {
-    
-    harvestableArea_by_AU <- data.frame(
       analysisUnit = numeric(0),
       harvestableArea_ha = numeric(0)
     )
@@ -200,17 +192,17 @@ Init <- function(sim) {
     colnames(harvestableArea_by_AU) <- c("analysisUnit", "harvestableArea_ha")
   }
   
-  # Rename columns cleanly
-  colnames(eligibleArea_by_AU) <- c("analysisUnit", "eligibleArea_ha")
-  colnames(harvestableArea_by_AU) <- c("analysisUnit", "harvestableArea_ha")
-  
+  # ---------------------------
   # Merge
+  # ---------------------------
+  
   areaByAU <- merge(
     eligibleArea_by_AU,
     harvestableArea_by_AU,
     by = "analysisUnit",
     all = TRUE
   )
+  # =========================================================
   # =========================================================
   # AGE CLASS PER AU (AAC-ready)
   # =========================================================
@@ -239,7 +231,13 @@ Init <- function(sim) {
     na.rm = TRUE
   )
   
-  if (is.null(ageAreaTable) || nrow(ageAreaTable) == 0) {
+  # ---------------------------
+  # SAFE handling
+  # ---------------------------
+  
+  if (is.null(ageAreaTable) ||
+      nrow(ageAreaTable) == 0 ||
+      !"sum" %in% names(ageAreaTable)) {
     
     ageAreaTable <- data.frame(
       analysisUnit = numeric(0),
@@ -249,7 +247,9 @@ Init <- function(sim) {
     
   } else {
     
-    ageAreaTable <- ageAreaTable[ageAreaTable$zone > 0, ]
+    colnames(ageAreaTable) <- c("AU_AgeCode", "sum")
+    
+    ageAreaTable <- ageAreaTable[ageAreaTable$AU_AgeCode > 0, ]
     
     if (nrow(ageAreaTable) == 0) {
       
@@ -261,8 +261,7 @@ Init <- function(sim) {
       
     } else {
       
-      ageAreaTable$sum <- ageAreaTable$sum * cellArea_ha
-      colnames(ageAreaTable) <- c("AU_AgeCode", "harvestableArea_ha")
+      ageAreaTable$harvestableArea_ha <- ageAreaTable$sum * cellArea_ha
       
       ageAreaTable$analysisUnit <- ageAreaTable$AU_AgeCode %/% 1000
       ageAreaTable$ageClass     <- ageAreaTable$AU_AgeCode %% 1000
