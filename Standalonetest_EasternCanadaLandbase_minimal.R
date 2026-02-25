@@ -103,7 +103,11 @@ CPCAD <- st_transform(CPCAD, crs(PlanningGrid_250m))
 ## =========================================================
 ## 8) INIT + RUN SIMULATION
 ## =========================================================
-
+class(LandCover_250m)
+class(standAge_250m)
+class(PlanningGrid_250m)
+class(Riparian$riparianFraction)
+class(CPCAD)
 sim <- simInit(
   times   = list(start = 1, end = 1),
   modules = "EasternCanadaLandbase",

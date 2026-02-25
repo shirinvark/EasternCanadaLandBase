@@ -45,11 +45,9 @@ Init <- function(sim) {
       field = 1
     )
     
-    sim$protectedAreaMask <- terra::ifel(
-      is.na(protTmp),
-      0,
-      1
-    )
+    sim$protectedAreaMask <- protTmp
+    sim$protectedAreaMask[is.na(sim$protectedAreaMask)] <- 0
+    sim$protectedAreaMask[sim$protectedAreaMask > 0] <- 1
   }
   
   
@@ -59,10 +57,16 @@ Init <- function(sim) {
   
   forestClasses <- c(210, 220, 230)
   
-  sim$forestCoverMask <- terra::ifel(
-    landCoverAligned %in% forestClasses,
-    1,
-    0
+  sim$forestCoverMask <- terra::classify(
+    landCoverAligned,
+    rcl = matrix(
+      c(210,210,1,
+        220,220,1,
+        230,230,1),
+      ncol = 3,
+      byrow = TRUE
+    ),
+    others = 0
   )
   
   # =========================================================
