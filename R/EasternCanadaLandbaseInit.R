@@ -57,18 +57,11 @@ Init <- function(sim) {
   
   forestClasses <- c(210, 220, 230)
   
-  sim$forestCoverMask <- terra::classify(
-    landCoverAligned,
-    rcl = matrix(
-      c(210,210,1,
-        220,220,1,
-        230,230,1),
-      ncol = 3,
-      byrow = TRUE
-    ),
-    others = 0
-  )
+  sim$forestCoverMask <- landCoverAligned
+  forestLogical <- sim$forestCoverMask %in% forestClasses
   
+  sim$forestCoverMask[!forestLogical] <- 0
+  sim$forestCoverMask[forestLogical]  <- 1
   # =========================================================
   # 4) BUILD SIMPLE ANALYSIS UNIT (DEV MODE)
   # =========================================================

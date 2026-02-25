@@ -99,7 +99,7 @@ CPCAD <- st_as_sf(
 )
 
 CPCAD <- st_transform(CPCAD, crs(PlanningGrid_250m))
-
+freq(LandCover_250m)
 ## =========================================================
 ## 8) INIT + RUN SIMULATION
 ## =========================================================
