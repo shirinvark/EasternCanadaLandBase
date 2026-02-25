@@ -152,8 +152,31 @@ Init <- function(sim) {
   )
   
   # Convert to hectares
-  eligibleArea_by_AU$sum <- eligibleArea_by_AU$sum * cellArea_ha
-  harvestableArea_by_AU$sum <- harvestableArea_by_AU$sum * cellArea_ha
+  if (is.null(eligibleArea_by_AU) || nrow(eligibleArea_by_AU) == 0) {
+    
+    eligibleArea_by_AU <- data.frame(
+      analysisUnit = numeric(0),
+      eligibleArea_ha = numeric(0)
+    )
+    
+  } else {
+    
+    eligibleArea_by_AU$sum <- eligibleArea_by_AU$sum * cellArea_ha
+    colnames(eligibleArea_by_AU) <- c("analysisUnit", "eligibleArea_ha")
+  }
+  
+  if (is.null(harvestableArea_by_AU) || nrow(harvestableArea_by_AU) == 0) {
+    
+    harvestableArea_by_AU <- data.frame(
+      analysisUnit = numeric(0),
+      harvestableArea_ha = numeric(0)
+    )
+    
+  } else {
+    
+    harvestableArea_by_AU$sum <- harvestableArea_by_AU$sum * cellArea_ha
+    colnames(harvestableArea_by_AU) <- c("analysisUnit", "harvestableArea_ha")
+  }
   
   # Rename columns cleanly
   colnames(eligibleArea_by_AU) <- c("analysisUnit", "eligibleArea_ha")
