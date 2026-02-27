@@ -37,10 +37,10 @@ defineModule(sim, list(
                  "Stand age raster aligned to PlanningGrid_250m"),
     
     expectsInput("Riparian", "list",
-                 "Riparian module output list"),
+                 "List containing riparianFraction (SpatRaster)"),
     
     expectsInput("LegalConstraints", "list",
-                 "Legal spatial constraints from EasternCanadaDataPrep")
+                 "List containing CPCAD_Raster_250m (SpatRaster)")
     
   ), fill = TRUE)
   ,
