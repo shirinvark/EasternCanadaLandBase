@@ -15,13 +15,14 @@ Init <- function(sim) {
   message("Preparing protectedAreaMask")
   
   if (!is.null(sim$LegalConstraints) &&
-      !is.null(sim$LegalConstraints$CPCAD_Raster_250m)) {
+      !is.null(sim$LegalConstraints$CPCAD_Raster_250m) &&
+      inherits(sim$LegalConstraints$CPCAD_Raster_250m, "SpatRaster")) {
     
     sim$protectedAreaMask <- sim$LegalConstraints$CPCAD_Raster_250m
     
   } else {
     
-    message("No CPCAD raster found → protectedAreaMask = 0")
+    message("No valid CPCAD raster found → protectedAreaMask = 0")
     
     sim$protectedAreaMask <- terra::rast(sim$PlanningGrid_250m)
     sim$protectedAreaMask[] <- 0
