@@ -30,11 +30,9 @@ Init <- function(sim) {
   # 3) forestCoverMask
   # ========================================================
   
-
   sim$forestCoverMask <- terra::ifel(
-    landCoverAligned == 210 |
-      landCoverAligned == 220 |
-      landCoverAligned == 230,
+    !is.na(landCoverAligned) &
+      landCoverAligned %in% c(210, 220, 230),
     1,
     0
   )
@@ -66,8 +64,6 @@ Init <- function(sim) {
   if (!inherits(riparianAligned, "SpatRaster")) {
     stop("Riparian$riparianFraction must be a SpatRaster")
   }
-  
-  riparianAligned <- terra::clamp(riparianAligned, 0, 1)
   
   message("Applying riparian reduction")
   
