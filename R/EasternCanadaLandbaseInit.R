@@ -32,7 +32,11 @@ Init <- function(sim) {
   
   sim$forestCoverMask <- terra::ifel(
     !is.na(landCoverAligned) &
-      landCoverAligned %in% c(210, 220, 230),
+      (
+        landCoverAligned == 210 |
+          landCoverAligned == 220 |
+          landCoverAligned == 230
+      ),
     1,
     0
   )
