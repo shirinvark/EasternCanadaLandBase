@@ -33,9 +33,8 @@ getModule(
 )
 
 ## =========================================================
-## 4) LOAD STUDY AREA (Sudbury FMU)
+## 4) LOAD STUDY AREA
 ## =========================================================
-
 studyArea <- sf::st_read(
   "E:/EasternCanadaDataPrep/BOUNDARIES/Sudbury_FMU_5070.shp",
   quiet = TRUE
@@ -44,9 +43,8 @@ studyArea <- sf::st_read(
 studyArea <- sf::st_make_valid(studyArea)
 
 ## =========================================================
-## 5) BUILD PLANNING GRID FROM STUDY AREA
+## 5) BUILD PLANNING GRID
 ## =========================================================
-
 PlanningGrid_250m <- rast(
   ext(vect(studyArea)),
   resolution = 250,
@@ -56,30 +54,30 @@ PlanningGrid_250m <- rast(
 PlanningGrid_250m[] <- 1
 
 ## =========================================================
-## 6) CREATE ALIGNED INPUTS (Standalone Simulation)
+## 6) CREATE SYNTHETIC INPUTS
 ## =========================================================
 
-# ---- LandCover (already aligned to 250m grid)
+# ---- LandCover
 LandCover_250m <- rast(PlanningGrid_250m)
 LandCover_250m[] <- sample(
-  c(210, 220, 230, 100), 
-  ncell(LandCover_250m), 
+  c(210, 220, 230, 100),
+  ncell(LandCover_250m),
   replace = TRUE
 )
 
 # ---- Stand Age
 standAge_250m <- rast(PlanningGrid_250m)
 standAge_250m[] <- sample(
-  1:120, 
-  ncell(standAge_250m), 
+  1:120,
+  ncell(standAge_250m),
   replace = TRUE
 )
 
-# ---- Riparian Fraction
+# ---- Riparian Fraction (0–0.4)
 riparianFraction <- rast(PlanningGrid_250m)
 riparianFraction[] <- runif(
-  ncell(riparianFraction), 
-  0, 
+  ncell(riparianFraction),
+  0,
   0.4
 )
 
@@ -88,26 +86,26 @@ Riparian <- list(
 )
 
 ## =========================================================
-## 7) CREATE DUMMY PROTECTED AREA (CPCAD)
+## 7) CREATE LegalConstraints (Protected Raster)
 ## =========================================================
+protectedRaster <- rast(PlanningGrid_250m)
+protectedRaster[] <- 0
 
-CPCAD <- st_as_sf(
-  st_buffer(
-    st_centroid(studyArea),
-    dist = 5000
+# 10% protected
+protectedRaster[
+  sample(
+    ncell(protectedRaster),
+    size = round(0.1 * ncell(protectedRaster))
   )
+] <- 1
+
+LegalConstraints <- list(
+  CPCAD_Raster_250m = protectedRaster
 )
 
-CPCAD <- st_transform(CPCAD, crs(PlanningGrid_250m))
-freq(LandCover_250m)
 ## =========================================================
 ## 8) INIT + RUN SIMULATION
 ## =========================================================
-class(LandCover_250m)
-class(standAge_250m)
-class(PlanningGrid_250m)
-class(Riparian$riparianFraction)
-class(CPCAD)
 sim <- simInit(
   times   = list(start = 1, end = 1),
   modules = "EasternCanadaLandbase",
@@ -115,8 +113,8 @@ sim <- simInit(
     PlanningGrid_250m = PlanningGrid_250m,
     LandCover_250m    = LandCover_250m,
     standAge_250m     = standAge_250m,
-    CPCAD             = CPCAD,
-    Riparian          = Riparian
+    Riparian          = Riparian,
+    LegalConstraints  = LegalConstraints
   )
 )
 
@@ -155,17 +153,4 @@ print(
   )
 )
 
-cat("\nArea by Analysis Unit:\n")
-print(sim$Landbase$planning$areaByAU)
-
-cat("\nAge Area by Analysis Unit:\n")
-print(sim$Landbase$planning$ageAreaByAU)
-
-cat("\nTotal Eligible Area (ha):\n")
-print(sim$Landbase$metrics$totalEligibleArea_ha)
-
-cat("\nTotal Harvestable Area (ha):\n")
-print(sim$Landbase$metrics$totalHarvestableArea_ha)
-
 cat("\n---- TEST COMPLETE ----\n")
-

@@ -39,8 +39,8 @@ defineModule(sim, list(
     expectsInput("Riparian", "list",
                  "Riparian module output list"),
     
-    expectsInput("CPCAD", "sf",
-                 "Protected areas")
+    expectsInput("LegalConstraints", "list",
+                 "Legal spatial constraints from EasternCanadaDataPrep")
     
   ), fill = TRUE)
   ,
@@ -58,9 +58,6 @@ defineModule(sim, list(
     createsOutput("harvestableFraction", "SpatRaster",
                   "Effective forest area after protected and riparian reduction"),
     
-    createsOutput("analysisUnitMap", "SpatRaster",
-                  "Temporary development analysis unit raster (to be modularized later"),
-    
     createsOutput("Landbase", "list",
                   "Derived landbase container")
     
@@ -75,7 +72,6 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (eventType == "init") {
     
-    sim <- .inputObjects(sim)   # حتما اول این
     sim <- Init(sim)
     
     return(invisible(sim))
@@ -94,8 +90,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) PlanningGrid (اول باید ساخته شود)
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m")) {
-    
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m", sim)) {    
     message("Standalone mode: creating synthetic PlanningGrid")
     
     sim$PlanningGrid_250m <- terra::rast(
@@ -113,7 +108,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 2) LandCover
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("LandCover_250m")) {
+  if (!SpaDES.core::suppliedElsewhere("LandCover_250m", sim)) {
     
     message("Standalone mode: creating synthetic NTEMS-like LandCover")
     
@@ -130,7 +125,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 3) StandAge
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("standAge_250m")) {
+  if (!SpaDES.core::suppliedElsewhere("standAge_250m", sim)) {
     
     sim$standAge_250m <- terra::rast(sim$PlanningGrid_250m)
     
@@ -145,7 +140,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 4) Riparian
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("Riparian")) {
+  if (!SpaDES.core::suppliedElsewhere("Riparian", sim)) {
     
     ripTmp <- terra::rast(sim$PlanningGrid_250m)
     ripTmp[] <- 0
@@ -159,10 +154,18 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 5) CPCAD
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("CPCAD")) {
+  # =========================================================
+  # 5) LegalConstraints
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("LegalConstraints", sim)) {    
+    message("Standalone mode: creating synthetic LegalConstraints")
     
-    sim$CPCAD <- sf::st_sf(
-      geometry = sf::st_sfc(crs = terra::crs(sim$PlanningGrid_250m))
+    protTmp <- terra::rast(sim$PlanningGrid_250m)
+    protTmp[] <- 0
+    
+    sim$LegalConstraints <- list(
+      CPCAD_Raster_250m = protTmp
     )
   }
   
