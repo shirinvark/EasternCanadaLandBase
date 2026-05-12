@@ -104,38 +104,85 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     sim$PlanningGrid_250m[] <- 1
   }
   
+  
   # =========================================================
   # 2) LandCover
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("LandCover_250m", sim)) {
+  if (SpaDES.core::suppliedElsewhere("LandCover_250m", sim)) {
     
-    message("Standalone mode: creating synthetic NTEMS-like LandCover")
+    message("✔ Using LandCover_250m supplied from upstream or user.")
     
-    sim$LandCover_250m <- terra::rast(sim$PlanningGrid_250m)
+  } else {
     
-    sim$LandCover_250m[] <- as.integer(sample(
-      c(81, 210, 220, 230),
-      terra::ncell(sim$LandCover_250m),
-      replace = TRUE
-    ))
+    dPath <- SpaDES.core::dataPath(sim)
+    
+    lc_dir <- file.path(dPath, "LandCover")
+    dir.create(lc_dir, showWarnings = FALSE, recursive = TRUE)
+    
+    lc_file <- file.path(lc_dir, "LandCover_250m.tif")
+    
+    if (file.exists(lc_file)) {
+      
+      message("✔ LandCover_250m found locally. Loading...")
+      
+      sim$LandCover_250m <- terra::rast(lc_file)
+      
+    } else {
+      
+      message("⬇ LandCover_250m not found locally. Downloading from Drive...")
+      
+      sim$LandCover_250m <- Cache(
+        prepInputs,
+        url = "https://drive.google.com/uc?export=download&id=1Gzhd5VnIZ7MqRSRJmNFiGfVUHrKkP9Ag",
+        destinationPath = lc_dir,
+        targetFile = "LandCover_250m.tif",
+        fun = terra::rast,
+        overwrite = FALSE
+      )
+    }
   }
   
   # =========================================================
-  # 3) StandAge
+  # 3) StandAgeMap (SCANFI 2020 only)
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("standAge_250m", sim)) {
+  if (SpaDES.core::suppliedElsewhere("standAge_250m", sim)) {
     
-    sim$standAge_250m <- terra::rast(sim$PlanningGrid_250m)
+    message("✔ Using standAge_250m supplied from upstream or user.")
     
-    sim$standAge_250m[] <- sample(
-      20:120,
-      terra::ncell(sim$standAge_250m),
-      replace = TRUE
+  } else {
+    
+    dPath <- SpaDES.core::dataPath(sim)
+    
+    sa_dir <- file.path(dPath, "StandAge")
+    dir.create(sa_dir, showWarnings = FALSE, recursive = TRUE)
+    
+    sa_file <- file.path(
+      sa_dir,
+      "standAge_250m.tif"
     )
+    
+    if (file.exists(sa_file)) {
+      
+      message("✔ standAge_250m found locally. Loading...")
+      
+      sim$standAge_250m <- terra::rast(sa_file)
+      
+    } else {
+      
+      message("⬇ standAge_250m not found locally. Downloading from Drive...")
+      
+      sim$standAge_250m <- Cache(
+        prepInputs,
+        url = "https://drive.google.com/uc?export=download&id=1OdZ7Tznk53KceEyt9dFOBOkxDHEX5X0U",
+        destinationPath = sa_dir,
+        targetFile = "standAge_250m.tif",
+        fun = terra::rast,
+        overwrite = FALSE
+      )
+    }
   }
-  
   # =========================================================
   # 4) Riparian
   # =========================================================

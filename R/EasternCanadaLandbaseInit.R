@@ -1,4 +1,5 @@
 Init <- function(sim) {
+  sim <- .inputObjects(sim)
   
   checkObject(sim, "PlanningGrid_250m", "SpatRaster")
   checkObject(sim, "LandCover_250m", "SpatRaster")
