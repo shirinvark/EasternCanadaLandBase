@@ -157,32 +157,14 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
   } else {
     
-    dPath <- SpaDES.core::dataPath(sim)
+    message("Standalone mode: creating synthetic LandCover")
     
-    lc_dir <- file.path(dPath, "LandCover")
-    dir.create(lc_dir, showWarnings = FALSE, recursive = TRUE)
+    sim$LandCover_250m <- terra::rast(
+      sim$PlanningGrid_250m
+    )
     
-    lc_file <- file.path(lc_dir, "LandCover_250m.tif")
+    sim$LandCover_250m[] <- 210
     
-    if (file.exists(lc_file)) {
-      
-      message("✔ LandCover_250m found locally. Loading...")
-      
-      sim$LandCover_250m <- terra::rast(lc_file)
-      
-    } else {
-      
-      message("⬇ LandCover_250m not found locally. Downloading from Drive...")
-      
-      sim$LandCover_250m <- Cache(
-        prepInputs,
-        url = "https://drive.google.com/uc?export=download&id=1Gzhd5VnIZ7MqRSRJmNFiGfVUHrKkP9Ag",
-        destinationPath = lc_dir,
-        targetFile = "LandCover_250m.tif",
-        fun = terra::rast,
-        overwrite = FALSE
-      )
-    }
   }
   
   # =========================================================
@@ -195,35 +177,14 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
   } else {
     
-    dPath <- SpaDES.core::dataPath(sim)
+    message("Standalone mode: creating synthetic standAge")
     
-    sa_dir <- file.path(dPath, "StandAge")
-    dir.create(sa_dir, showWarnings = FALSE, recursive = TRUE)
-    
-    sa_file <- file.path(
-      sa_dir,
-      "standAge_250m.tif"
+    sim$standAge_250m <- terra::rast(
+      sim$PlanningGrid_250m
     )
     
-    if (file.exists(sa_file)) {
-      
-      message("✔ standAge_250m found locally. Loading...")
-      
-      sim$standAge_250m <- terra::rast(sa_file)
-      
-    } else {
-      
-      message("⬇ standAge_250m not found locally. Downloading from Drive...")
-      
-      sim$standAge_250m <- Cache(
-        prepInputs,
-        url = "https://drive.google.com/uc?export=download&id=1OdZ7Tznk53KceEyt9dFOBOkxDHEX5X0U",
-        destinationPath = sa_dir,
-        targetFile = "standAge_250m.tif",
-        fun = terra::rast,
-        overwrite = FALSE
-      )
-    }
+    sim$standAge_250m[] <- 80
+    
   }
   # =========================================================
   # 4) Riparian

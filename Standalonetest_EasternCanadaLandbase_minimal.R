@@ -33,107 +33,72 @@ getModule(
 )
 
 ## =========================================================
-## 4) LOAD STUDY AREA
+## 4) PURE STANDALONE TEST
 ## =========================================================
-studyArea <- sf::st_read(
-  "E:/EasternCanadaDataPrep/BOUNDARIES/Sudbury_FMU_5070.shp",
-  quiet = TRUE
-)
-
-studyArea <- sf::st_make_valid(studyArea)
-
-## =========================================================
-## 5) BUILD PLANNING GRID
-## =========================================================
-PlanningGrid_250m <- rast(
-  ext(vect(studyArea)),
-  resolution = 250,
-  crs = crs(vect(studyArea))
-)
-
-PlanningGrid_250m[] <- 1
-
-## =========================================================
-## 6) CREATE SYNTHETIC INPUTS
+## No objects supplied externally.
+## Module must create/load everything itself.
 ## =========================================================
 
-# ---- LandCover
-LandCover_250m <- rast(PlanningGrid_250m)
-LandCover_250m[] <- sample(
-  c(210, 220, 230, 100),
-  ncell(LandCover_250m),
-  replace = TRUE
-)
-
-# ---- Stand Age
-standAge_250m <- rast(PlanningGrid_250m)
-standAge_250m[] <- sample(
-  1:120,
-  ncell(standAge_250m),
-  replace = TRUE
-)
-
-# ---- Riparian Fraction (0–0.4)
-riparianFraction <- rast(PlanningGrid_250m)
-riparianFraction[] <- runif(
-  ncell(riparianFraction),
-  0,
-  0.4
-)
-
-Riparian <- list(
-  riparianFraction = riparianFraction
-)
-
-## =========================================================
-## 7) CREATE LegalConstraints (Protected Raster)
-## =========================================================
-protectedRaster <- rast(PlanningGrid_250m)
-protectedRaster[] <- 0
-
-# 10% protected
-protectedRaster[
-  sample(
-    ncell(protectedRaster),
-    size = round(0.1 * ncell(protectedRaster))
-  )
-] <- 1
-
-LegalConstraints <- list(
-  CPCAD_Raster_250m = protectedRaster
-)
-
-## =========================================================
-## 8) INIT + RUN SIMULATION
-## =========================================================
 sim <- simInit(
-  times   = list(start = 1, end = 1),
-  modules = "EasternCanadaLandbase",
-  objects = list(
-    PlanningGrid_250m = PlanningGrid_250m,
-    LandCover_250m    = LandCover_250m,
-    standAge_250m     = standAge_250m,
-    Riparian          = Riparian,
-    LegalConstraints  = LegalConstraints
-  )
+  times = list(start = 1, end = 1),
+  modules = "EasternCanadaLandbase"
 )
 
+## =========================================================
+## 5) RUN MODULE
+## =========================================================
 sim <- spades(sim)
 
 ## =========================================================
-## 9) OUTPUT CHECKS
+## 6) OUTPUT CHECKS
 ## =========================================================
 
-cat("\nForest cells:\n")
-print(global(sim$forestCoverMask, "sum", na.rm = TRUE))
+cat("\n============================\n")
+cat("OUTPUT OBJECTS\n")
+cat("============================\n")
 
-cat("\nProtected cells:\n")
-print(global(sim$protectedAreaMask, "sum", na.rm = TRUE))
+print(names(sim))
 
-cat("\nTotal harvestable area (fractional sum):\n")
-print(global(sim$harvestableFraction, "sum", na.rm = TRUE))
+cat("\n============================\n")
+cat("FOREST CELLS\n")
+cat("============================\n")
 
-cat("\nCheck: No protected cell harvestable\n")
+print(
+  global(
+    sim$forestCoverMask,
+    "sum",
+    na.rm = TRUE
+  )
+)
+
+cat("\n============================\n")
+cat("PROTECTED CELLS\n")
+cat("============================\n")
+
+print(
+  global(
+    sim$protectedAreaMask,
+    "sum",
+    na.rm = TRUE
+  )
+)
+
+cat("\n============================\n")
+cat("TOTAL HARVESTABLE AREA\n")
+cat("============================\n")
+
+print(
+  global(
+    sim$harvestableFraction,
+    "sum",
+    na.rm = TRUE
+  )
+)
+
+cat("\n============================\n")
+cat("CHECK: NO PROTECTED CELL HARVESTABLE\n")
+cat("============================\n")
+
 print(
   global(
     (sim$harvestableFraction > 0) &
@@ -143,7 +108,10 @@ print(
   )
 )
 
-cat("\nCheck: Harvestable subset of forest\n")
+cat("\n============================\n")
+cat("CHECK: HARVESTABLE ⊂ FOREST\n")
+cat("============================\n")
+
 print(
   global(
     (sim$harvestableFraction > 0) &
@@ -153,5 +121,30 @@ print(
   )
 )
 
-cat("\n---- TEST COMPLETE ----\n")
+cat("\n============================\n")
+cat("CHECK: RIPARIAN FRACTION RANGE\n")
+cat("============================\n")
 
+print(
+  global(
+    sim$Landbase$fractional$riparianFraction,
+    c("min", "max"),
+    na.rm = TRUE
+  )
+)
+
+cat("\n============================\n")
+cat("CHECK: HARVESTABLE FRACTION RANGE\n")
+cat("============================\n")
+
+print(
+  global(
+    sim$harvestableFraction,
+    c("min", "max"),
+    na.rm = TRUE
+  )
+)
+
+cat("\n============================\n")
+cat("PURE STANDALONE TEST COMPLETE\n")
+cat("============================\n")

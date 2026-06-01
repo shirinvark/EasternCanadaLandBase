@@ -9,7 +9,26 @@ Init <- function(sim) {
   
   landCoverAligned  <- sim$LandCover_250m
   standAgeAligned   <- sim$standAge_250m
-  riparianAligned   <- sim$Riparian$riparianFraction  
+  riparianAligned   <- sim$Riparian$riparianFraction 
+  landCoverAligned  <- sim$LandCover_250m
+  standAgeAligned   <- sim$standAge_250m
+  riparianAligned   <- sim$Riparian$riparianFraction
+  
+  message("===== SIZE CHECK =====")
+  
+  print(
+    terra::ncell(sim$PlanningGrid_250m)
+  )
+  
+  print(
+    terra::ncell(landCoverAligned)
+  )
+  
+  print(
+    terra::ncell(standAgeAligned)
+  )
+  
+  message("======================")
   # 2) protectedAreaMask
   # =========================================================
   
@@ -75,7 +94,7 @@ Init <- function(sim) {
   
   sim$harvestableFraction <- isHarvestEligible * (1 - riparianAligned)
   
- 
+  
   # =========================================================
   # 8) FINAL LANDBASE
   # =========================================================
@@ -100,6 +119,6 @@ Init <- function(sim) {
       harvestableFraction = sim$harvestableFraction
     )
   )
-    
+  
   invisible(sim)
 }
