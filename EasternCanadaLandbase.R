@@ -29,6 +29,11 @@ defineModule(sim, list(
     
     expectsInput("PlanningGrid_250m", "SpatRaster",
                  "Planning grid from EasternCanadaDataPrep"),
+    expectsInput(
+      "studyArea",
+      "sf",
+      "Study area polygon"
+    ),
     
     expectsInput("LandCover_250m", "SpatRaster",
                  "Land cover raster aligned to PlanningGrid_250m"),
@@ -85,6 +90,43 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 
 # =========================================================
 .inputObjects <- function(sim) {
+  if (!SpaDES.core::suppliedElsewhere("studyArea", sim)) {
+    
+    message("🔵 Creating default studyArea (Eastern Canada)...")
+    
+    can <- rnaturalearth::ne_states(
+      country = "Canada",
+      returnclass = "sf"
+    )
+    
+    east <- can[can$name_en %in% c(
+      "Ontario","Quebec","New Brunswick",
+      "Nova Scotia","Prince Edward Island",
+      "Newfoundland and Labrador"
+    ), ]
+    
+    east_union <- sf::st_union(east)
+    
+    sim$studyArea <- sf::st_sf(
+      data.frame(id = 1),
+      geometry = sf::st_transform(
+        east_union,
+        "ESRI:102001"
+      )
+    )
+  }
+  
+  studyArea_sf <- sim$studyArea
+  
+  if (inherits(studyArea_sf, "SpatVector")) {
+    
+    studyArea_v <- studyArea_sf
+    
+  } else {
+    
+    studyArea_v <- terra::vect(studyArea_sf)
+    
+  }
   
   # =========================================================
   # 1) PlanningGrid (اول باید ساخته شود)
