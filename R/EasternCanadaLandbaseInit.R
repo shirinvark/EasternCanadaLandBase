@@ -7,12 +7,38 @@ Init <- function(sim) {
   checkObject(sim, "Riparian", "list")
   checkObject(sim, "LegalConstraints", "list")
   
-  landCoverAligned  <- sim$LandCover_250m
-  standAgeAligned   <- sim$standAge_250m
-  riparianAligned   <- sim$Riparian$riparianFraction 
-  landCoverAligned  <- sim$LandCover_250m
-  standAgeAligned   <- sim$standAge_250m
-  riparianAligned   <- sim$Riparian$riparianFraction
+  landCoverAligned <- terra::resample(
+    sim$LandCover_250m,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
+  standAgeAligned <- terra::resample(
+    sim$standAge_250m,
+    sim$PlanningGrid_250m,
+    method = "near"
+  )
+  
+  riparianAligned <- sim$Riparian$riparianFraction
+  print(
+    terra::compareGeom(
+      sim$PlanningGrid_250m,
+      landCoverAligned,
+      stopOnError = FALSE
+    )
+  )
+  
+  print(
+    terra::compareGeom(
+      sim$PlanningGrid_250m,
+      standAgeAligned,
+      stopOnError = FALSE
+    )
+  )
+  
+  print(terra::ext(sim$PlanningGrid_250m))
+  print(terra::ext(landCoverAligned))
+  print(terra::ext(standAgeAligned))
   
   message("===== SIZE CHECK =====")
   
@@ -38,7 +64,19 @@ Init <- function(sim) {
       !is.null(sim$LegalConstraints$CPCAD_Raster_250m) &&
       inherits(sim$LegalConstraints$CPCAD_Raster_250m, "SpatRaster")) {
     
-    sim$protectedAreaMask <- sim$LegalConstraints$CPCAD_Raster_250m
+    sim$protectedAreaMask <- terra::resample(
+      sim$LegalConstraints$CPCAD_Raster_250m,
+      sim$PlanningGrid_250m,
+      method = "near"
+    )
+    
+    print(
+      terra::compareGeom(
+        sim$PlanningGrid_250m,
+        sim$protectedAreaMask,
+        stopOnError = FALSE
+      )
+    )
     
   } else {
     
@@ -71,7 +109,25 @@ Init <- function(sim) {
     1,
     0
   )
+  print(
+    terra::compareGeom(
+      sim$forestCoverMask,
+      sim$protectedAreaMask,
+      stopOnError = FALSE
+    )
+  )
   
+  print(
+    terra::compareGeom(
+      sim$forestCoverMask,
+      ageValid,
+      stopOnError = FALSE
+    )
+  )
+  
+  print(terra::ext(sim$forestCoverMask))
+  print(terra::ext(sim$protectedAreaMask))
+  print(terra::ext(ageValid))
   isHarvestEligible <- terra::ifel(
     sim$forestCoverMask == 1 &
       sim$protectedAreaMask == 0 &
