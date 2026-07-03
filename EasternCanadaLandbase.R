@@ -31,8 +31,8 @@ defineModule(sim, list(
                  "Planning grid from EasternCanadaDataPrep"),
     expectsInput(
       "studyArea",
-      "sf",
-      "Study area polygon"
+      objectClass = c("sf", "SpatVector"),
+      desc = "Study area polygon"
     ),
     
     expectsInput("LandCover", "SpatRaster",
@@ -129,19 +129,24 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   }
   
   # =========================================================
-  # 1) PlanningGrid (اول باید ساخته شود)
+  # 1) PlanningGrid
   # =========================================================
   
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
     
     if (!SpaDES.core::suppliedElsewhere("rasterToMatch", sim)) {
       
-      sim$rasterToMatch <- terra::rast(
-        sim$studyArea,
-        resolution = 240,
-        crs = terra::crs(sim$studyArea)
-      )
+      study_v <- if (inherits(sim$studyArea, "SpatVector")) {
+        sim$studyArea
+      } else {
+        terra::vect(sim$studyArea)
+      }
       
+      sim$rasterToMatch <- terra::rast(
+        ext = terra::ext(study_v),
+        resolution = 240,
+        crs = terra::crs(study_v)
+      )
     }
     
     sim$PlanningGrid <- sim$rasterToMatch

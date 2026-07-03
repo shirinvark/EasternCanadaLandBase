@@ -72,7 +72,7 @@ Init <- function(sim) {
     
     print(
       terra::compareGeom(
-        sim$PlanningGrid_,
+        sim$PlanningGrid,
         sim$protectedAreaMask,
         stopOnError = FALSE
       )
