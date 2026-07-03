@@ -7,17 +7,9 @@ Init <- function(sim) {
   checkObject(sim, "Riparian", "list")
   checkObject(sim, "LegalConstraints", "list")
   
-  landCoverAligned <- terra::resample(
-    sim$LandCover,
-    sim$PlanningGrid,
-    method = "near"
-  )
+  landCoverAligned <- sim$LandCover
   
-  standAgeAligned <- terra::resample(
-    sim$standAge,
-    sim$PlanningGrid,
-    method = "near"
-  )
+  standAgeAligned <- sim$standAge
   
   riparianAligned <- sim$Riparian$riparianFraction
   print(
