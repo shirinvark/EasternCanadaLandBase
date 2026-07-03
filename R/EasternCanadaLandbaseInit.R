@@ -137,7 +137,22 @@ Init <- function(sim) {
   if (!inherits(riparianAligned, "SpatRaster")) {
     stop("Riparian$riparianFraction must be a SpatRaster")
   }
+  print(
+    terra::compareGeom(
+      isHarvestEligible,
+      riparianAligned,
+      stopOnError = FALSE
+    )
+  )
   
+  print(terra::ext(isHarvestEligible))
+  print(terra::ext(riparianAligned))
+  
+  print(dim(isHarvestEligible))
+  print(dim(riparianAligned))
+  
+  print(terra::res(isHarvestEligible))
+  print(terra::res(riparianAligned))
   message("Applying riparian reduction")
   
   sim$harvestableFraction <- isHarvestEligible * (1 - riparianAligned)
