@@ -27,7 +27,7 @@ defineModule(sim, list(
   parameters = list(),
   inputObjects = data.table::rbindlist(list(
     
-    expectsInput("PlanningGrid_250m", "SpatRaster",
+    expectsInput("PlanningGrid", "SpatRaster",
                  "Planning grid from EasternCanadaDataPrep"),
     expectsInput(
       "studyArea",
@@ -35,17 +35,17 @@ defineModule(sim, list(
       "Study area polygon"
     ),
     
-    expectsInput("LandCover_250m", "SpatRaster",
-                 "Land cover raster aligned to PlanningGrid_250m"),
+    expectsInput("LandCover", "SpatRaster",
+                 "Land cover raster aligned to PlanningGrid"),
     
-    expectsInput("standAge_250m", "SpatRaster",
-                 "Stand age raster aligned to PlanningGrid_250m"),
+    expectsInput("standAge", "SpatRaster",
+                 "Stand age raster aligned to PlanningGrid"),
     
     expectsInput("Riparian", "list",
              "List containing riparianFraction (SpatRaster)"),
 
 expectsInput("LegalConstraints", "list",
-             "List containing CPCAD_Raster_250m (SpatRaster)")
+             "List containing CPCAD_Raster (SpatRaster)")
     
   ), fill = TRUE)
   ,
@@ -132,38 +132,39 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) PlanningGrid (اول باید ساخته شود)
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m", sim)) {    
-    message("Standalone mode: creating synthetic PlanningGrid")
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
     
-    sim$PlanningGrid_250m <- terra::rast(
-      nrows = 50, ncols = 50,
-      xmin = 0, xmax = 12500,
-      ymin = 0, ymax = 12500,
-      res  = 250,
-      crs  = "EPSG:5070"
-    )
+    if (!SpaDES.core::suppliedElsewhere("rasterToMatch", sim)) {
+      
+      sim$rasterToMatch <- terra::rast(
+        sim$studyArea,
+        resolution = 240,
+        crs = terra::crs(sim$studyArea)
+      )
+      
+    }
     
-    sim$PlanningGrid_250m[] <- 1
+    sim$PlanningGrid <- sim$rasterToMatch
+    terra::values(sim$PlanningGrid) <- 1
   }
-  
   
   # =========================================================
   # 2) LandCover
   # =========================================================
   
-  if (SpaDES.core::suppliedElsewhere("LandCover_250m", sim)) {
+  if (SpaDES.core::suppliedElsewhere("LandCover", sim)) {
     
-    message("✔ Using LandCover_250m supplied from upstream or user.")
+    message("✔ Using LandCover_ supplied from upstream or user.")
     
   } else {
     
     message("Standalone mode: creating synthetic LandCover")
     
-    sim$LandCover_250m <- terra::rast(
-      sim$PlanningGrid_250m
+    sim$LandCover <- terra::rast(
+      sim$PlanningGrid
     )
     
-    sim$LandCover_250m[] <- 210
+    sim$LandCover[] <- 210
     
   }
   
@@ -171,19 +172,19 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 3) StandAgeMap (SCANFI 2020 only)
   # =========================================================
   
-  if (SpaDES.core::suppliedElsewhere("standAge_250m", sim)) {
+  if (SpaDES.core::suppliedElsewhere("standAge", sim)) {
     
-    message("✔ Using standAge_250m supplied from upstream or user.")
+    message("✔ Using standAge supplied from upstream or user.")
     
   } else {
     
     message("Standalone mode: creating synthetic standAge")
     
-    sim$standAge_250m <- terra::rast(
-      sim$PlanningGrid_250m
+    sim$standAge <- terra::rast(
+      sim$PlanningGrid
     )
     
-    sim$standAge_250m[] <- 80
+    sim$standAge[] <- 80
     
   }
   # =========================================================
@@ -192,7 +193,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("Riparian", sim)) {
     
-    ripTmp <- terra::rast(sim$PlanningGrid_250m)
+    ripTmp <- terra::rast(sim$PlanningGrid)
     ripTmp[] <- 0
     
     sim$Riparian <- list(
@@ -211,11 +212,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   if (!SpaDES.core::suppliedElsewhere("LegalConstraints", sim)) {    
     message("Standalone mode: creating synthetic LegalConstraints")
     
-    protTmp <- terra::rast(sim$PlanningGrid_250m)
+    protTmp <- terra::rast(sim$PlanningGrid)
     protTmp[] <- 0
     
     sim$LegalConstraints <- list(
-      CPCAD_Raster_250m = protTmp
+      CPCAD_Raster = protTmp
     )
   }
   

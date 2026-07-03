@@ -1,28 +1,28 @@
 Init <- function(sim) {
   sim <- .inputObjects(sim)
   
-  checkObject(sim, "PlanningGrid_250m", "SpatRaster")
-  checkObject(sim, "LandCover_250m", "SpatRaster")
-  checkObject(sim, "standAge_250m", "SpatRaster")
+  checkObject(sim, "PlanningGrid", "SpatRaster")
+  checkObject(sim, "LandCover", "SpatRaster")
+  checkObject(sim, "standAge", "SpatRaster")
   checkObject(sim, "Riparian", "list")
   checkObject(sim, "LegalConstraints", "list")
   
   landCoverAligned <- terra::resample(
-    sim$LandCover_250m,
-    sim$PlanningGrid_250m,
+    sim$LandCover,
+    sim$PlanningGrid,
     method = "near"
   )
   
   standAgeAligned <- terra::resample(
-    sim$standAge_250m,
-    sim$PlanningGrid_250m,
+    sim$standAge,
+    sim$PlanningGrid,
     method = "near"
   )
   
   riparianAligned <- sim$Riparian$riparianFraction
   print(
     terra::compareGeom(
-      sim$PlanningGrid_250m,
+      sim$PlanningGrid,
       landCoverAligned,
       stopOnError = FALSE
     )
@@ -30,20 +30,20 @@ Init <- function(sim) {
   
   print(
     terra::compareGeom(
-      sim$PlanningGrid_250m,
+      sim$PlanningGrid,
       standAgeAligned,
       stopOnError = FALSE
     )
   )
   
-  print(terra::ext(sim$PlanningGrid_250m))
+  print(terra::ext(sim$PlanningGrid))
   print(terra::ext(landCoverAligned))
   print(terra::ext(standAgeAligned))
   
   message("===== SIZE CHECK =====")
   
   print(
-    terra::ncell(sim$PlanningGrid_250m)
+    terra::ncell(sim$PlanningGrid)
   )
   
   print(
@@ -61,18 +61,18 @@ Init <- function(sim) {
   message("Preparing protectedAreaMask")
   
   if (!is.null(sim$LegalConstraints) &&
-      !is.null(sim$LegalConstraints$CPCAD_Raster_250m) &&
-      inherits(sim$LegalConstraints$CPCAD_Raster_250m, "SpatRaster")) {
+      !is.null(sim$LegalConstraints$CPCAD_Raster) &&
+      inherits(sim$LegalConstraints$CPCAD_Raster, "SpatRaster")) {
     
     sim$protectedAreaMask <- terra::resample(
-      sim$LegalConstraints$CPCAD_Raster_250m,
-      sim$PlanningGrid_250m,
+      sim$LegalConstraints$CPCAD_Raster,
+      sim$PlanningGrid,
       method = "near"
     )
     
     print(
       terra::compareGeom(
-        sim$PlanningGrid_250m,
+        sim$PlanningGrid_,
         sim$protectedAreaMask,
         stopOnError = FALSE
       )
@@ -82,10 +82,10 @@ Init <- function(sim) {
     
     message("No valid CPCAD raster found → protectedAreaMask = 0")
     
-    sim$protectedAreaMask <- terra::rast(sim$PlanningGrid_250m)
+    sim$protectedAreaMask <- terra::rast(sim$PlanningGrid)
     sim$protectedAreaMask[] <- 0
   }
-  # ========================================================
+  # ======================================================
   # 3) forestCoverMask
   # ========================================================
   
@@ -159,7 +159,7 @@ Init <- function(sim) {
   sim$Landbase <- list(
     
     baseData = list(
-      planningRaster = sim$PlanningGrid_250m,
+      planningRaster = sim$PlanningGrid,
       landcover      = landCoverAligned,
       standAge       = standAgeAligned
     ),
