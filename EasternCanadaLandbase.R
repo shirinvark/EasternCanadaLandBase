@@ -132,26 +132,27 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) PlanningGrid
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
+  # =========================================================
+  # 1) PlanningGrid
+  # =========================================================
+  
+  if (!inherits(sim$rasterToMatch, "SpatRaster")) {
     
-    if (!SpaDES.core::suppliedElsewhere("rasterToMatch", sim)) {
-      
-      study_v <- if (inherits(sim$studyArea, "SpatVector")) {
-        sim$studyArea
-      } else {
-        terra::vect(sim$studyArea)
-      }
-      
-      sim$rasterToMatch <- terra::rast(
-        ext = terra::ext(study_v),
-        resolution = 240,
-        crs = terra::crs(study_v)
-      )
+    study_v <- if (inherits(sim$studyArea, "SpatVector")) {
+      sim$studyArea
+    } else {
+      terra::vect(sim$studyArea)
     }
     
-    sim$PlanningGrid <- sim$rasterToMatch
-    terra::values(sim$PlanningGrid) <- 1
+    sim$rasterToMatch <- terra::rast(
+      ext = terra::ext(study_v),
+      resolution = 240,
+      crs = terra::crs(study_v)
+    )
   }
+  
+  sim$PlanningGrid <- sim$rasterToMatch
+  terra::values(sim$PlanningGrid) <- 1
   
   # =========================================================
   # 2) LandCover
