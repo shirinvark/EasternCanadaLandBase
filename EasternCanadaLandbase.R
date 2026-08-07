@@ -162,7 +162,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) PlanningGrid
   # =========================================================
   
-  if (SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
+  
+  if (
+    !is.null(sim$PlanningGrid) &&
+    inherits(sim$PlanningGrid, "SpatRaster")
+  ) {
     
     message("✔ Using PlanningGrid supplied from EasternCanadaDataPrep.")
     
@@ -182,7 +186,8 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
       crs = terra::crs(study_v)
     )
     
-    terra::values(sim$PlanningGrid) <- 1
+    sim$PlanningGrid[] <- 1
+    names(sim$PlanningGrid) <- "PlanningGrid"
   }
   
   # =========================================================
@@ -210,7 +215,10 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 3) standAge
   # =========================================================
   
-  if (SpaDES.core::suppliedElsewhere("standAge", sim)) {
+  if (
+    !is.null(sim$standAge) &&
+    inherits(sim$standAge, "SpatRaster")
+  ) {
     
     message("✔ Using standAge supplied from upstream.")
     
@@ -218,13 +226,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     
     message("Standalone mode: creating synthetic standAge")
     
-    sim$standAge <- terra::rast(
-      sim$PlanningGrid
-    )
-    
+    sim$standAge <- terra::rast(sim$PlanningGrid)
     sim$standAge[] <- 80
     names(sim$standAge) <- "standAge"
-  }
+  }    
+  
   # =========================================================
   # 4) Riparian
   # =========================================================
