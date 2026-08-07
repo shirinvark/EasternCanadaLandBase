@@ -43,9 +43,34 @@ defineModule(sim, list(
     
     expectsInput("Riparian", "list",
              "List containing riparianFraction (SpatRaster)"),
-
-expectsInput("LegalConstraints", "list",
-             "List containing CPCAD_Raster (SpatRaster)")
+    expectsInput(
+      "jurisdiction",
+      "SpatRaster",
+      "Jurisdiction raster aligned to PlanningGrid"
+    ),
+    
+    expectsInput(
+      "bcr",
+      "SpatRaster",
+      "Bird Conservation Region raster aligned to PlanningGrid"
+    ),
+    
+    expectsInput(
+      "yieldCurveFamily",
+      "SpatRaster",
+      "Yield Curve Family raster aligned to PlanningGrid"
+    ),
+    
+    expectsInput(
+      "Ownership",
+      "SpatRaster",
+      "National ownership raster"
+    ),
+    expectsInput(
+      "protectedArea",
+      "SpatRaster",
+      "Protected area raster aligned to PlanningGrid"
+    )
     
   ), fill = TRUE)
   ,
@@ -62,6 +87,11 @@ expectsInput("LegalConstraints", "list",
     
     createsOutput("harvestableFraction", "SpatRaster",
                   "Effective forest area after protected and riparian reduction"),
+    createsOutput(
+      "landbaseRaster",
+      "SpatRaster",
+      "Multi-layer raster containing spatial attributes used by the landbase."
+    ),
     
     createsOutput("Landbase", "list",
                   "Derived landbase container")
@@ -132,11 +162,13 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 1) PlanningGrid
   # =========================================================
   
-  # =========================================================
-  # 1) PlanningGrid
-  # =========================================================
-  
-  if (!inherits(sim$rasterToMatch, "SpatRaster")) {
+  if (SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
+    
+    message("✔ Using PlanningGrid supplied from EasternCanadaDataPrep.")
+    
+  } else {
+    
+    message("Standalone mode: creating synthetic PlanningGrid")
     
     study_v <- if (inherits(sim$studyArea, "SpatVector")) {
       sim$studyArea
@@ -144,23 +176,23 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
       terra::vect(sim$studyArea)
     }
     
-    sim$rasterToMatch <- terra::rast(
+    sim$PlanningGrid <- terra::rast(
       ext = terra::ext(study_v),
       resolution = 240,
       crs = terra::crs(study_v)
     )
+    
+    terra::values(sim$PlanningGrid) <- 1
   }
-  
-  sim$PlanningGrid <- sim$rasterToMatch
-  terra::values(sim$PlanningGrid) <- 1
   
   # =========================================================
   # 2) LandCover
   # =========================================================
+ 
   
   if (SpaDES.core::suppliedElsewhere("LandCover", sim)) {
     
-    message("✔ Using LandCover_ supplied from upstream or user.")
+    message("✔ Using LandCover supplied from upstream.")
     
   } else {
     
@@ -171,16 +203,16 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
     
     sim$LandCover[] <- 210
-    
+    names(sim$LandCover) <- "LandCover"
   }
   
   # =========================================================
-  # 3) StandAgeMap (SCANFI 2020 only)
+  # 3) standAge
   # =========================================================
   
   if (SpaDES.core::suppliedElsewhere("standAge", sim)) {
     
-    message("✔ Using standAge supplied from upstream or user.")
+    message("✔ Using standAge supplied from upstream.")
     
   } else {
     
@@ -191,7 +223,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
     
     sim$standAge[] <- 80
-    
+    names(sim$standAge) <- "standAge"
   }
   # =========================================================
   # 4) Riparian
@@ -208,22 +240,97 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   }
   
   # =========================================================
-  # 5) CPCAD
+  # 5) protectedArea
   # =========================================================
   
+  if (SpaDES.core::suppliedElsewhere("protectedArea", sim)) {
+    
+    message("✔ Using protectedArea supplied from EasternCanadaDataPrep.")
+    
+  } else {
+    
+    message("Standalone mode: creating synthetic protectedArea")
+    
+    sim$protectedArea <- terra::rast(sim$PlanningGrid)
+    sim$protectedArea[] <- 0
+    
+    names(sim$protectedArea) <- "protectedArea"
+  }
+  
+  
   # =========================================================
-  # 5) LegalConstraints
+  # 6) jurisdiction
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("LegalConstraints", sim)) {    
-    message("Standalone mode: creating synthetic LegalConstraints")
+  if (SpaDES.core::suppliedElsewhere("jurisdiction", sim)) {
     
-    protTmp <- terra::rast(sim$PlanningGrid)
-    protTmp[] <- 0
+    message("✔ Using jurisdiction supplied from EasternCanadaDataPrep.")
     
-    sim$LegalConstraints <- list(
-      CPCAD_Raster = protTmp
-    )
+  } else {
+    
+    message("Standalone mode: creating synthetic jurisdiction")
+    
+    sim$jurisdiction <- terra::rast(sim$PlanningGrid)
+    sim$jurisdiction[] <- 1
+    
+    names(sim$jurisdiction) <- "jurisdiction"
+  }
+  
+  
+  # =========================================================
+  # 7) BCR
+  # =========================================================
+  
+  if (SpaDES.core::suppliedElsewhere("bcr", sim)) {
+    
+    message("✔ Using bcr supplied from EasternCanadaDataPrep.")
+    
+  } else {
+    
+    message("Standalone mode: creating synthetic bcr")
+    
+    sim$bcr <- terra::rast(sim$PlanningGrid)
+    sim$bcr[] <- 1
+    
+    names(sim$bcr) <- "bcr"
+  }
+  
+  
+  # =========================================================
+  # 8) Yield Curve Family
+  # =========================================================
+  
+  if (SpaDES.core::suppliedElsewhere("yieldCurveFamily", sim)) {
+    
+    message("✔ Using yieldCurveFamily supplied from EasternCanadaDataPrep.")
+    
+  } else {
+    
+    message("Standalone mode: creating synthetic yieldCurveFamily")
+    
+    sim$yieldCurveFamily <- terra::rast(sim$PlanningGrid)
+    sim$yieldCurveFamily[] <- 1
+    
+    names(sim$yieldCurveFamily) <- "yieldCurveFamily"
+  }
+  
+  
+  # =========================================================
+  # 9) Ownership
+  # =========================================================
+  
+  if (SpaDES.core::suppliedElsewhere("Ownership", sim)) {
+    
+    message("✔ Using Ownership supplied from EasternCanadaDataPrep.")
+    
+  } else {
+    
+    message("Standalone mode: creating synthetic Ownership")
+    
+    sim$Ownership <- terra::rast(sim$PlanningGrid)
+    sim$Ownership[] <- 1
+    
+    names(sim$Ownership) <- "Ownership"
   }
   
   return(invisible(sim))

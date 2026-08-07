@@ -5,13 +5,17 @@ Init <- function(sim) {
   checkObject(sim, "LandCover", "SpatRaster")
   checkObject(sim, "standAge", "SpatRaster")
   checkObject(sim, "Riparian", "list")
-  checkObject(sim, "LegalConstraints", "list")
-  
+  checkObject(sim, "protectedArea", "SpatRaster")
+  checkObject(sim, "jurisdiction", "SpatRaster")
+  checkObject(sim, "bcr", "SpatRaster")
+  checkObject(sim, "yieldCurveFamily", "SpatRaster")
+  checkObject(sim, "Ownership", "SpatRaster")
   landCoverAligned <- sim$LandCover
   
   standAgeAligned <- sim$standAge
   
   riparianAligned <- sim$Riparian$riparianFraction
+  sim <- buildLandbaseRaster(sim)
   print(
     terra::compareGeom(
       sim$PlanningGrid,
@@ -47,36 +51,32 @@ Init <- function(sim) {
   )
   
   message("======================")
-  # 2) protectedAreaMask
+  
+  # =========================================================
+  # 2) Protected Areas
   # =========================================================
   
-  message("Preparing protectedAreaMask")
+  message("Using protectedArea from EasternCanadaDataPrep")
   
-  if (!is.null(sim$LegalConstraints) &&
-      !is.null(sim$LegalConstraints$CPCAD_Raster) &&
-      inherits(sim$LegalConstraints$CPCAD_Raster, "SpatRaster")) {
-    
-    sim$protectedAreaMask <- terra::resample(
-      sim$LegalConstraints$CPCAD_Raster,
+  checkObject(
+    sim,
+    "protectedArea",
+    "SpatRaster"
+  )
+  
+  sim$protectedAreaMask <- terra::ifel(
+    sim$protectedArea > 0,
+    1,
+    0
+  )
+  
+  print(
+    terra::compareGeom(
       sim$PlanningGrid,
-      method = "near"
+      sim$protectedAreaMask,
+      stopOnError = FALSE
     )
-    
-    print(
-      terra::compareGeom(
-        sim$PlanningGrid,
-        sim$protectedAreaMask,
-        stopOnError = FALSE
-      )
-    )
-    
-  } else {
-    
-    message("No valid CPCAD raster found → protectedAreaMask = 0")
-    
-    sim$protectedAreaMask <- terra::rast(sim$PlanningGrid)
-    sim$protectedAreaMask[] <- 0
-  }
+  )
   # ======================================================
   # 3) forestCoverMask
   # ========================================================
