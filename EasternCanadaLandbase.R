@@ -24,11 +24,36 @@ defineModule(sim, list(
   citation = list("citation.bib"),
   documentation = list("NEWS.md", "README.md", "EasternCanadaLandbase.Rmd"),
   reqdPkgs = list("terra", "sf", "LandR"),
-  parameters = list(),
+ 
+    parameters = list(
+      
+      defineParameter(
+        ".useLandbaseRules",
+        "logical",
+        TRUE,
+        NA,
+        NA,
+        "Apply Protected Area and Ownership rules when defining the landbase."
+      ),
+      
+      defineParameter(
+        ".includeRiparianBuffers",
+        "logical",
+        TRUE,
+        NA,
+        NA,
+        "Apply riparian buffers when calculating harvestable fraction."
+      )
+  ),
   inputObjects = data.table::rbindlist(list(
     
     expectsInput("PlanningGrid", "SpatRaster",
                  "Planning grid from EasternCanadaDataPrep"),
+    expectsInput(
+      "SYU",
+      "SpatRaster",
+      "Sustained Yield Unit raster aligned to PlanningGrid"
+    ),
     expectsInput(
       "studyArea",
       objectClass = c("sf", "SpatVector"),
@@ -60,6 +85,11 @@ defineModule(sim, list(
       "SpatRaster",
       "Yield Curve Family raster aligned to PlanningGrid"
     ),
+    expectsInput(
+      "DMFL",
+      "SpatRaster",
+      "Designated Managed Forest Lands raster aligned to PlanningGrid; 1 = inside, 0 = outside"
+    ),
     
     expectsInput(
       "Ownership",
@@ -70,6 +100,11 @@ defineModule(sim, list(
       "protectedArea",
       "SpatRaster",
       "Protected area raster aligned to PlanningGrid"
+    ),
+    expectsInput(
+      "SYULookup",
+      objectClass = c("data.frame", "data.table"),
+      desc = "Lookup table linking SYU raster IDs to SYU names"
     )
     
   ), fill = TRUE)
@@ -77,8 +112,6 @@ defineModule(sim, list(
   
   outputObjects = data.table::rbindlist(list(
     
-    createsOutput("protectedAreaMask", "SpatRaster",
-                  "Binary protected areas mask"),
     createsOutput("isHarvestEligible", "SpatRaster",
                   "Binary harvest eligibility mask"),
     
@@ -86,11 +119,16 @@ defineModule(sim, list(
                   "Binary forestCoverMask excluding wetlands"),
     
     createsOutput("harvestableFraction", "SpatRaster",
-                  "Effective forest area after protected and riparian reduction"),
+                  "Fraction of each PlanningGrid cell available for harvest after landbase and riparian constraints"),
     createsOutput(
       "landbaseRaster",
       "SpatRaster",
       "Multi-layer raster containing spatial attributes used by the landbase."
+    ),
+    createsOutput(
+      "landbaseClass",
+      "SpatRaster",
+      "Landbase inclusion class: 0 = excluded, 1 = included non-harvestable, 2 = harvestable"
     ),
     
     createsOutput("Landbase", "list",
@@ -189,7 +227,40 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     sim$PlanningGrid[] <- 1
     names(sim$PlanningGrid) <- "PlanningGrid"
   }
+  # =========================================================
+  # 2) Sustained Yield Unit (SYU)
+  # =========================================================
   
+  # =========================================================
+  # SYU
+  # =========================================================
+  
+  if (SpaDES.core::suppliedElsewhere("SYU", sim)) {
+    
+    message("✔ Using SYU supplied from upstream.")
+    
+  } else {
+    
+    message("Standalone mode: creating synthetic SYU")
+    
+    sim$SYU <- terra::rast(sim$PlanningGrid)
+    sim$SYU[] <- 1
+    
+    names(sim$SYU) <- "SYU"
+  }
+  
+  # =========================================================
+  # SYU Lookup
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("SYULookup", sim)) {
+    
+    sim$SYULookup <- data.frame(
+      SYU_ID = 1,
+      SYU_NAME = "StudyArea",
+      stringsAsFactors = FALSE
+    )
+  }
   # =========================================================
   # 2) LandCover
   # =========================================================
@@ -334,20 +405,36 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     message("Standalone mode: creating synthetic Ownership")
     
     sim$Ownership <- terra::rast(sim$PlanningGrid)
-    sim$Ownership[] <- 1
+    sim$Ownership[] <- 13
     
     names(sim$Ownership) <- "Ownership"
   }
+  # =========================================================
+  # 10) Designated Managed Forest Lands (DMFL)
+  # =========================================================
   
+  if (SpaDES.core::suppliedElsewhere("DMFL", sim)) {
+    
+    message("✔ Using DMFL supplied from EasternCanadaDataPrep.")
+    
+  } else {
+    
+    message("DMFL not supplied: assuming all PlanningGrid cells are within DMFL.")
+    
+    sim$DMFL <- terra::rast(sim$PlanningGrid)
+    sim$DMFL[] <- 1
+    
+    names(sim$DMFL) <- "DMFL"
+  }
   return(invisible(sim))
 }
 
 ## Summary:
-## EasternCanadaLandbase builds the effective harvestable
-## planning landbase from prepared spatial inputs.
-
-## Policy interpretation, ecological modeling, and harvest
-## decisions are intentionally excluded from this module.
+## EasternCanadaLandbase defines the planning landbase
+## from prepared spatial inputs.
+##
+## Protected Area and Ownership rules are interpreted
+## here to determine landbase inclusion classes (0, 1, 2).
 
 ggplotFn <- function(data, ...) {
   ggplot2::ggplot(data, ggplot2::aes(TheSample)) +
