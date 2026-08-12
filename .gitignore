@@ -21,3 +21,5 @@ CHECKSUMS.txt
 .Ruserdata
 CA_FAO_forest_2019/
 .positai
+running_3module_realdata.R
+test_with_Sudbary.R

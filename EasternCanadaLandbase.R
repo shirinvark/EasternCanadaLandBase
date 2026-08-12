@@ -63,8 +63,8 @@ defineModule(sim, list(
     expectsInput("LandCover", "SpatRaster",
                  "Land cover raster aligned to PlanningGrid"),
     
-    expectsInput("standAge", "SpatRaster",
-                 "Stand age raster aligned to PlanningGrid"),
+    # expectsInput("standAge", "SpatRaster",
+    #              "Stand age raster aligned to PlanningGrid"),
     
     expectsInput("Riparian", "list",
              "List containing riparianFraction (SpatRaster)"),
@@ -286,22 +286,22 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 3) standAge
   # =========================================================
   
-  if (
-    !is.null(sim$standAge) &&
-    inherits(sim$standAge, "SpatRaster")
-  ) {
-    
-    message("✔ Using standAge supplied from upstream.")
-    
-  } else {
-    
-    message("Standalone mode: creating synthetic standAge")
-    
-    sim$standAge <- terra::rast(sim$PlanningGrid)
-    sim$standAge[] <- 80
-    names(sim$standAge) <- "standAge"
-  }    
-  
+  # if (
+  #   !is.null(sim$standAge) &&
+  #   inherits(sim$standAge, "SpatRaster")
+  # ) {
+  #   
+  #   message("✔ Using standAge supplied from upstream.")
+  #   
+  # } else {
+  #   
+  #   message("Standalone mode: creating synthetic standAge")
+  #   
+  #   sim$standAge <- terra::rast(sim$PlanningGrid)
+  #   sim$standAge[] <- 80
+  #   names(sim$standAge) <- "standAge"
+  # }    
+  # 
   # =========================================================
   # 4) Riparian
   # =========================================================
