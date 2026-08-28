@@ -116,7 +116,7 @@ defineModule(sim, list(
                   "Binary harvest eligibility mask"),
     
     createsOutput("forestCoverMask", "SpatRaster",
-                  "Binary forestCoverMask excluding wetlands"),
+                  "Binary forest/non-forest mask derived from LandCover"),
     
     createsOutput("harvestableFraction", "SpatRaster",
                   "Fraction of each PlanningGrid cell available for harvest after landbase and riparian constraints"),
