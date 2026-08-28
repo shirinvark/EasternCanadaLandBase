@@ -4,7 +4,6 @@ Init <- function(sim) {
   checkObject(sim, "PlanningGrid", "SpatRaster")
   checkObject(sim, "SYU", "SpatRaster")
   checkObject(sim, "LandCover", "SpatRaster")
-  #checkObject(sim, "standAge", "SpatRaster")
   checkObject(sim, "Riparian", "list")
   checkObject(sim, "protectedArea", "SpatRaster")
   checkObject(sim, "jurisdiction", "SpatRaster")
@@ -15,8 +14,7 @@ Init <- function(sim) {
   checkObject(sim, "SYULookup", c("data.frame", "data.table"))
   
   landCoverAligned <- sim$LandCover
-  
-  #standAgeAligned <- sim$standAge
+
   
   riparianAligned <- sim$Riparian$riparianFraction
   # =========================================================
@@ -29,12 +27,6 @@ Init <- function(sim) {
       landCoverAligned,
       stopOnError = FALSE
     )
-    # ,
-    # standAge = terra::compareGeom(
-    #   sim$PlanningGrid,
-    #   standAgeAligned,
-    #   stopOnError = FALSE
-    # )
   )
   
   if (!all(geomOK)) {
@@ -73,7 +65,6 @@ Init <- function(sim) {
     baseData = list(
       planningRaster = sim$PlanningGrid,
       landcover      = landCoverAligned,
-     # standAge       = standAgeAligned
     ),
     masks = list(
       forestCoverMask   = sim$forestCoverMask,
