@@ -10,7 +10,7 @@ buildLandbaseRaster <- function(sim) {
   message("Building Landbase raster stack...")
   
   layers <- list(
-    jurisdiction = sim$jurisdiction,
+    jurisdiction = sim$jurisdictionMap,
     bcr = sim$bcr,
     yieldCurveFamily = sim$yieldCurveFamily,
     ownership = sim$Ownership,
@@ -43,7 +43,7 @@ buildLandbaseRaster <- function(sim) {
   names(sim$landbaseRaster) <- names(layers)
   
   message(
-    "✔ Landbase raster created with ",
+    "Landbase raster created with ",
     terra::nlyr(sim$landbaseRaster),
     " layers."
   )

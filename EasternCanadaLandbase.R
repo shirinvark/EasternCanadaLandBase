@@ -67,7 +67,7 @@ defineModule(sim, list(
     expectsInput("Riparian", "list",
              "List containing riparianFraction (SpatRaster)"),
     expectsInput(
-      "jurisdiction",
+      "jurisdictionMap",
       "SpatRaster",
       "Jurisdiction raster aligned to PlanningGrid"
     ),
@@ -155,7 +155,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
 .inputObjects <- function(sim) {
   if (!SpaDES.core::suppliedElsewhere("studyArea", sim)) {
     
-    message("🔵 Creating default studyArea (Eastern Canada)...")
+    message("Creating default studyArea (Eastern Canada)...")
     
     can <- rnaturalearth::ne_states(
       country = "Canada",
@@ -179,17 +179,11 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
   }
   
-  studyArea_sf <- sim$studyArea
-  
-  if (inherits(studyArea_sf, "SpatVector")) {
-    
-    studyArea_v <- studyArea_sf
-    
-  } else {
-    
-    studyArea_v <- terra::vect(studyArea_sf)
-    
+  if (!inherits(sim$studyArea, "SpatVector")) {
+    sim$studyArea <- terra::vect(sim$studyArea)
   }
+  
+  studyArea_v <- sim$studyArea
   
   # =========================================================
   # 1) PlanningGrid
@@ -201,22 +195,18 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     inherits(sim$PlanningGrid, "SpatRaster")
   ) {
     
-    message("✔ Using PlanningGrid supplied from EasternCanadaDataPrep.")
+    message("Using PlanningGrid supplied from EasternCanadaDataPrep.")
     
   } else {
     
     message("Standalone mode: creating synthetic PlanningGrid")
     
-    study_v <- if (inherits(sim$studyArea, "SpatVector")) {
-      sim$studyArea
-    } else {
-      terra::vect(sim$studyArea)
-    }
+    
     
     sim$PlanningGrid <- terra::rast(
-      ext = terra::ext(study_v),
+      ext = terra::ext(studyArea_v),
       resolution = 240,
-      crs = terra::crs(study_v)
+      crs = terra::crs(studyArea_v)
     )
     
     sim$PlanningGrid[] <- 1
@@ -232,7 +222,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (SpaDES.core::suppliedElsewhere("SYU", sim)) {
     
-    message("✔ Using SYU supplied from upstream.")
+    message("Using SYU supplied from upstream.")
     
   } else {
     
@@ -263,7 +253,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (SpaDES.core::suppliedElsewhere("LandCover", sim)) {
     
-    message("✔ Using LandCover supplied from upstream.")
+    message("Using LandCover supplied from upstream.")
     
   } else {
     
@@ -297,7 +287,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (SpaDES.core::suppliedElsewhere("protectedArea", sim)) {
     
-    message("✔ Using protectedArea supplied from EasternCanadaDataPrep.")
+    message("Using protectedArea supplied from EasternCanadaDataPrep.")
     
   } else {
     
@@ -314,18 +304,18 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   # 6) jurisdiction
   # =========================================================
   
-  if (SpaDES.core::suppliedElsewhere("jurisdiction", sim)) {
+  if (SpaDES.core::suppliedElsewhere("jurisdictionMap", sim)) {
     
-    message("✔ Using jurisdiction supplied from EasternCanadaDataPrep.")
+    message("Using jurisdictionMap supplied from EasternCanadaDataPrep.")
     
   } else {
     
-    message("Standalone mode: creating synthetic jurisdiction")
+    message("Standalone mode: creating synthetic jurisdictionMap")
     
-    sim$jurisdiction <- terra::rast(sim$PlanningGrid)
-    sim$jurisdiction[] <- 1
+    sim$jurisdictionMap <- terra::rast(sim$PlanningGrid)
+    sim$jurisdictionMap[] <- 1
     
-    names(sim$jurisdiction) <- "jurisdiction"
+    names(sim$jurisdictionMap) <- "jurisdiction"
   }
   
   
@@ -335,7 +325,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (SpaDES.core::suppliedElsewhere("bcr", sim)) {
     
-    message("✔ Using bcr supplied from EasternCanadaDataPrep.")
+    message("Using bcr supplied from EasternCanadaDataPrep.")
     
   } else {
     
@@ -354,7 +344,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (SpaDES.core::suppliedElsewhere("yieldCurveFamily", sim)) {
     
-    message("✔ Using yieldCurveFamily supplied from EasternCanadaDataPrep.")
+    message("Using yieldCurveFamily supplied from EasternCanadaDataPrep.")
     
   } else {
     
@@ -373,7 +363,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (SpaDES.core::suppliedElsewhere("Ownership", sim)) {
     
-    message("✔ Using Ownership supplied from EasternCanadaDataPrep.")
+    message("Using Ownership supplied from EasternCanadaDataPrep.")
     
   } else {
     
@@ -390,7 +380,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
   
   if (SpaDES.core::suppliedElsewhere("DMFL", sim)) {
     
-    message("✔ Using DMFL supplied from EasternCanadaDataPrep.")
+    message("Using DMFL supplied from EasternCanadaDataPrep.")
     
   } else {
     

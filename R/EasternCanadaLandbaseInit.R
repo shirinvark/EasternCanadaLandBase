@@ -6,7 +6,7 @@ Init <- function(sim) {
   checkObject(sim, "LandCover", "SpatRaster")
   checkObject(sim, "Riparian", "list")
   checkObject(sim, "protectedArea", "SpatRaster")
-  checkObject(sim, "jurisdiction", "SpatRaster")
+  checkObject(sim, "jurisdictionMap", "SpatRaster")
   checkObject(sim, "bcr", "SpatRaster")
   checkObject(sim, "yieldCurveFamily", "SpatRaster")
   checkObject(sim, "Ownership", "SpatRaster")
