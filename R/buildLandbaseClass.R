@@ -11,8 +11,8 @@
 #
 # Final priority:
 #   1. Outside DMFL       -> 0
-#   2. Protected area    -> protected-area rule
-#   3. Otherwise         -> ownership rule
+#   2. Protected area     -> protected-area rule
+#   3. Otherwise          -> ownership rule
 #
 # SYU-specific overrides have priority over jurisdiction-specific overrides.
 #------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ buildLandbaseClass <- function(sim) {
     inherits(sim$DMFL, "SpatRaster"),
     inherits(sim$protectedArea, "SpatRaster"),
     inherits(sim$Ownership, "SpatRaster"),
-    inherits(sim$jurisdiction, "SpatRaster"),
+    inherits(sim$jurisdictionMap, "SpatRaster"),
     inherits(sim$SYU, "SpatRaster")
   )
   
@@ -50,9 +50,9 @@ buildLandbaseClass <- function(sim) {
       sim$Ownership,
       stopOnError = FALSE
     ),
-    jurisdiction = terra::compareGeom(
+    jurisdictionMap = terra::compareGeom(
       sim$PlanningGrid,
-      sim$jurisdiction,
+      sim$jurisdictionMap,
       stopOnError = FALSE
     ),
     SYU = terra::compareGeom(
@@ -101,7 +101,7 @@ buildLandbaseClass <- function(sim) {
   
   if (length(rules$protectedArea$jurisdiction) > 0) {
     
-    jurLookup <- levels(sim$jurisdiction)[[1]]
+    jurLookup <- levels(sim$jurisdictionMap)[[1]]
     
     for (jurName in names(rules$protectedArea$jurisdiction)) {
       
@@ -118,7 +118,7 @@ buildLandbaseClass <- function(sim) {
       for (code in names(overrides)) {
         
         paClass <- terra::ifel(
-          sim$jurisdiction == jurID &
+          sim$jurisdictionMap == jurID &
             sim$protectedArea == as.numeric(code),
           as.numeric(overrides[[code]]),
           paClass
@@ -133,7 +133,7 @@ buildLandbaseClass <- function(sim) {
   
   if (length(rules$ownership$jurisdiction) > 0) {
     
-    jurLookup <- levels(sim$jurisdiction)[[1]]
+    jurLookup <- levels(sim$jurisdictionMap)[[1]]
     
     for (jurName in names(rules$ownership$jurisdiction)) {
       
@@ -150,7 +150,7 @@ buildLandbaseClass <- function(sim) {
       for (code in names(overrides)) {
         
         ownershipClass <- terra::ifel(
-          sim$jurisdiction == jurID &
+          sim$jurisdictionMap == jurID &
             sim$Ownership == as.numeric(code),
           as.numeric(overrides[[code]]),
           ownershipClass
