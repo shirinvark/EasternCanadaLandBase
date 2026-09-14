@@ -21,7 +21,6 @@ defineModule(sim, list(
   loadOrder = list("EasternCanadaDataPrep", "RiparianBuffers"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
-  citation = list("citation.bib"),
   documentation = list("NEWS.md", "README.md", "EasternCanadaLandbase.Rmd"),
   reqdPkgs = list("terra", "sf", "LandR"),
  
@@ -54,7 +53,6 @@ defineModule(sim, list(
       "SpatRaster",
       "Sustained Yield Unit raster aligned to PlanningGrid"
     ),
-    expectsInput(
       expectsInput(
         "studyArea",
         objectClass = "SpatVector",
