@@ -1,8 +1,8 @@
 #------------------------------------------------------------------------------
 # Build Landbase Raster Stack
 #
-# Combines prepared spatial attributes into a common multi-layer SpatRaster
-# aligned to the PlanningGrid.
+# Combines prepared and derived landbase attributes into a common
+# multi-layer SpatRaster aligned to the PlanningGrid.
 #------------------------------------------------------------------------------
 
 buildLandbaseRaster <- function(sim) {
@@ -10,12 +10,18 @@ buildLandbaseRaster <- function(sim) {
   message("Building Landbase raster stack...")
   
   layers <- list(
-    jurisdiction = sim$jurisdictionMap,
+    SYU = sim$SYU,
+    jurisdictionMap = sim$jurisdictionMap,
     bcr = sim$bcr,
     yieldCurveFamily = sim$yieldCurveFamily,
     ownership = sim$Ownership,
     protectedArea = sim$protectedArea,
-    riparianFraction = sim$Riparian$riparianFraction
+    DMFL = sim$DMFL,
+    landbaseClass = sim$landbaseClass,
+    forestCoverMask = sim$forestCoverMask,
+    isHarvestEligible = sim$isHarvestEligible,
+    riparianFraction = sim$Riparian$riparianFraction,
+    harvestableFraction = sim$harvestableFraction
   )
   
   # Check geometry against PlanningGrid

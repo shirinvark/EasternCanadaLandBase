@@ -64,7 +64,7 @@ Init <- function(sim) {
     
     baseData = list(
       planningRaster = sim$PlanningGrid,
-      landcover      = landCoverAligned,
+      landcover      = landCoverAligned
     ),
     masks = list(
       forestCoverMask   = sim$forestCoverMask,
