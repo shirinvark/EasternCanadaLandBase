@@ -23,3 +23,23 @@ CA_FAO_forest_2019/
 .positai
 running_3module_realdata.R
 test_with_Sudbary.R
+# R / RStudio local files
+.Rhistory
+.Rproj.user/
+
+# SpaDES project runtime directories
+cache/
+inputs/
+modules/
+outputs/
+scratch/
+
+# Runtime-generated files
+CHECKSUMS.txt
+
+# Local development/test scripts
+NEW_RUN_3.R
+test_with_Sudbary.R
+
+# Generated documentation
+README.html

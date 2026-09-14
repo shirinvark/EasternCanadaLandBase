@@ -55,10 +55,11 @@ defineModule(sim, list(
       "Sustained Yield Unit raster aligned to PlanningGrid"
     ),
     expectsInput(
-      "studyArea",
-      objectClass = c("sf", "SpatVector"),
-      desc = "Study area polygon"
-    ),
+      expectsInput(
+        "studyArea",
+        objectClass = "SpatVector",
+        desc = "Study area polygon"
+      ),
     
     expectsInput("LandCover", "SpatRaster",
                  "Land cover raster aligned to PlanningGrid"),
@@ -163,26 +164,24 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     )
     
     east <- can[can$name_en %in% c(
-      "Ontario","Quebec","New Brunswick",
-      "Nova Scotia","Prince Edward Island",
+      "Ontario", "Quebec", "New Brunswick",
+      "Nova Scotia", "Prince Edward Island",
       "Newfoundland and Labrador"
     ), ]
     
-    east_union <- sf::st_union(east)
+    sim$studyArea <- terra::vect(east)
     
-    sim$studyArea <- sf::st_sf(
-      data.frame(id = 1),
-      geometry = sf::st_transform(
-        east_union,
-        "ESRI:102001"
-      )
+    sim$studyArea <- terra::aggregate(sim$studyArea)
+    
+    sim$studyArea <- terra::project(
+      sim$studyArea,
+      "ESRI:102001"
     )
   }
   
   if (!inherits(sim$studyArea, "SpatVector")) {
     sim$studyArea <- terra::vect(sim$studyArea)
   }
-  
   studyArea_v <- sim$studyArea
   
   # =========================================================
@@ -315,7 +314,7 @@ doEvent.EasternCanadaLandbase <- function(sim, eventTime, eventType) {
     sim$jurisdictionMap <- terra::rast(sim$PlanningGrid)
     sim$jurisdictionMap[] <- 1
     
-    names(sim$jurisdictionMap) <- "jurisdiction"
+    names(sim$jurisdictionMap) <- "jurisdictionMap"
   }
   
   
